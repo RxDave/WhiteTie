@@ -22,6 +22,6 @@ Visit the [wiki](../../wiki) for details.
 White Tie generates a _.nuspec_ file with some of the default values derived from attributes in the output assembly. NuGet may generate an error when required values are missing. To avoid these errors, you must either: 
 
 * Include all required assembly attributes as per [NuGet's replacement token documentation](http://docs.nuget.org/docs/reference/nuspec-reference/#Replacement_Tokens).
-* Set the required [MSBuild NuSpec Properties](../../wiki/Properties#nuspecproperties) in your project file.
+* Set the required [MSBuild NuSpec Properties](../../wiki/Properties#nuspec-properties) in your project file.
 
 The first choice is the simplest. In general, you only have to enter non-empty strings for `AssemblyCompanyAttribute` and `AssemblyDescriptionAttribute` to resolve any errors; however, you should review all of the attributes anyway to ensure that you get the desired output; e.g., `AssemblyTitleAttribute`, `AssemblyCopyrightAttribute` and `AssemblyVersionAttribute` are also used in the NuGet package.
