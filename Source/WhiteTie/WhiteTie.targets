@@ -199,7 +199,7 @@ wmic datafile where Name="%FileEscaped%" get version /VALUE]]>
       <_WhiteTieReflectionProgramSource>
         <![CDATA[
 // Copyright © 2014 Dave Sexton
-// http://whitetie.codeplex.com
+// https://github.com/RxDave/WhiteTie
 using System;
 using System.Collections.Generic;
 using System.IO;

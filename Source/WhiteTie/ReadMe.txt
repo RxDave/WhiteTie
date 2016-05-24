@@ -1,7 +1,7 @@
 ﻿  White Tie
---============================--
-  http://whitetie.codeplex.com
---============================--
+--==================================--
+  https://github.com/RxDave/WhiteTie
+--==================================--
 
 Build your project in Release mode to:
 
@@ -62,10 +62,10 @@ More Information
 ----------------
 
 Getting Started
-https://whitetie.codeplex.com/documentation
+https://github.com/RxDave/WhiteTie/wiki
 
 Configuration
-http://whitetie.codeplex.com/wikipage?title=Configuration
+https://github.com/RxDave/WhiteTie/wiki/Configuration
 
 Author's Blog
 http://davesexton.com/blog

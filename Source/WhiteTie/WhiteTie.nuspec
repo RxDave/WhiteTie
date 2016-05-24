@@ -8,13 +8,13 @@
     <title>White Tie</title>
     <authors>Dave Sexton</authors>
     <owners>Dave Sexton</owners>
-    <licenseUrl>https://whitetie.codeplex.com/license</licenseUrl>
-    <projectUrl>https://whitetie.codeplex.com</projectUrl>
+    <licenseUrl>https://github.com/RxDave/WhiteTie/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/RxDave/WhiteTie</projectUrl>
     <iconUrl>http://davesexton.com/Images/WhiteTie/WhiteTie.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Provides MSBuild properties and targets that automatically enable static analysis tools, NuGet packaging, documentation generation and local deployment.  No configuration necessary.</description>
     <summary>MSBuild properties and targets related to static analysis, NuGet packaging, documentation generation and local deployment.</summary>
-    <releaseNotes>https://whitetie.codeplex.com/releases</releaseNotes>
+    <releaseNotes>https://github.com/RxDave/WhiteTie/releases</releaseNotes>
     <copyright>Copyright © 2013-2016 Dave Sexton</copyright>
     <language>en-us</language>
     <tags>MSBuild, Build, Targets, Project, NuGet, Package, Deploy</tags>
