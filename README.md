@@ -1,4 +1,4 @@
-# WhiteTie
+# White Tie
 Visit the [wiki](../../wiki) for details.
 
 ## Features
