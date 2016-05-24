@@ -1,0 +1,235 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{A1F1723F-3101-4C0B-8C05-C1E9EA300395}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Source", "Source", "{A76F8D77-4A03-4A54-BBA0-1E8072C5A08D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Testing", "Testing", "{4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deployment", "Deployment", "{95EC5901-7219-4387-BA19-EC6291D7B892}"
+	ProjectSection(SolutionItems) = preProject
+		Deployment\ReadMe.txt = Deployment\ReadMe.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{C945EC90-978A-4330-9A05-DAB8A803ED3F}"
+	ProjectSection(SolutionItems) = preProject
+		Build\TestingUtilities.targets = Build\TestingUtilities.targets
+		WhiteTie.vssettings = WhiteTie.vssettings
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{281A2EA5-8B82-4BBC-A3DF-F4D0C882B728}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{B26AC04F-7903-4462-9E11-FB3E29E49135}"
+	ProjectSection(SolutionItems) = preProject
+		Build\Tools\NuGet\data.js = Build\Tools\NuGet\data.js
+		Build\Tools\NuGet\Import Profiles.html = Build\Tools\NuGet\Import Profiles.html
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Media", "Media", "{7C2EC833-CFDF-4A5F-AAB4-EF3EED4A87BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Artifacts", "Artifacts", "{CE8FDACA-03B8-430A-9AC5-E03BFA78C74F}"
+	ProjectSection(SolutionItems) = preProject
+		Artifacts\NuGet Package Process.txt = Artifacts\NuGet Package Process.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Icons", "Icons", "{ECD7179F-DC5B-4C5A-BE37-D4C47B018A9C}"
+	ProjectSection(SolutionItems) = preProject
+		Artifacts\Media\Icons\WhiteTie.ico = Artifacts\Media\Icons\WhiteTie.ico
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{067EAA75-8399-45B3-9870-40AF9D32DCD0}"
+	ProjectSection(SolutionItems) = preProject
+		Artifacts\Media\Images\WhiteTie100x100.png = Artifacts\Media\Images\WhiteTie100x100.png
+		Artifacts\Media\Images\WhiteTie32x32.png = Artifacts\Media\Images\WhiteTie32x32.png
+		Artifacts\Media\Images\WhiteTie50x50.png = Artifacts\Media\Images\WhiteTie50x50.png
+		Artifacts\Media\Images\WhiteTieOnBlack50x50.png = Artifacts\Media\Images\WhiteTieOnBlack50x50.png
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie", "Source\WhiteTie\WhiteTie.csproj", "{97D15E18-1496-4197-A0B2-DA4E5F9549C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestDependency", "Testing\WhiteTie.TestDependency\WhiteTie.TestDependency.csproj", "{6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857} = {F30B872E-62A2-4904-B1A5-5FBE08C2A857}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.Test", "Testing\WhiteTie.Test\WhiteTie.Test.csproj", "{07EA4CC7-8BAE-4507-8EA1-420DAE3818DE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857} = {F30B872E-62A2-4904-B1A5-5FBE08C2A857}
+		{5A6D24F5-F9EE-4768-8766-0860E06BAFF2} = {5A6D24F5-F9EE-4768-8766-0860E06BAFF2}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestReference", "Testing\WhiteTie.TestReference\WhiteTie.TestReference.csproj", "{9EBA8179-0404-4D6C-BC26-41EC8A51396D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857} = {F30B872E-62A2-4904-B1A5-5FBE08C2A857}
+		{E2A125DD-6E54-41A4-8FE0-B36556A475B5} = {E2A125DD-6E54-41A4-8FE0-B36556A475B5}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestCodeContracts", "Testing\WhiteTie.TestCodeContracts\WhiteTie.TestCodeContracts.csproj", "{723705E3-C87B-4AF5-9AEB-81EBF1ADC413}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857} = {F30B872E-62A2-4904-B1A5-5FBE08C2A857}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.Primary", "Testing\WhiteTie.TestFlavor.Primary\WhiteTie.TestFlavor.Primary.csproj", "{963483E2-BFD6-47D7-B581-2C70F73307C6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{98588041-495B-420E-9176-87C4DE6261F3} = {98588041-495B-420E-9176-87C4DE6261F3}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.PrimaryWithContracts", "Testing\WhiteTie.TestFlavor.PrimaryWithContracts\WhiteTie.TestFlavor.PrimaryWithContracts.csproj", "{BB4DFE9D-8904-4074-8EF0-30493AF52CA9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.Second", "Testing\WhiteTie.TestFlavor.Second\WhiteTie.TestFlavor.Second.csproj", "{3176CE3A-137E-4735-8139-3A73EF44711A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{963483E2-BFD6-47D7-B581-2C70F73307C6} = {963483E2-BFD6-47D7-B581-2C70F73307C6}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.Third", "Testing\WhiteTie.TestFlavor.Third\WhiteTie.TestFlavor.Third.csproj", "{1FE426CC-F172-4740-B153-3DE5A91018A3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.SecondReference", "Testing\WhiteTie.TestFlavor.SecondReference\WhiteTie.TestFlavor.SecondReference.csproj", "{C0B4679B-5689-4D98-A710-9527471F3E0D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.UnitTests", "Testing\WhiteTie.UnitTests\WhiteTie.UnitTests.csproj", "{28C70E31-45ED-415C-9E62-45B5685E6E51}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{3176CE3A-137E-4735-8139-3A73EF44711A} = {3176CE3A-137E-4735-8139-3A73EF44711A}
+		{9EBA8179-0404-4D6C-BC26-41EC8A51396D} = {9EBA8179-0404-4D6C-BC26-41EC8A51396D}
+		{C0B4679B-5689-4D98-A710-9527471F3E0D} = {C0B4679B-5689-4D98-A710-9527471F3E0D}
+		{BB4DFE9D-8904-4074-8EF0-30493AF52CA9} = {BB4DFE9D-8904-4074-8EF0-30493AF52CA9}
+		{6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A} = {6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A}
+		{07EA4CC7-8BAE-4507-8EA1-420DAE3818DE} = {07EA4CC7-8BAE-4507-8EA1-420DAE3818DE}
+		{1FE426CC-F172-4740-B153-3DE5A91018A3} = {1FE426CC-F172-4740-B153-3DE5A91018A3}
+		{963483E2-BFD6-47D7-B581-2C70F73307C6} = {963483E2-BFD6-47D7-B581-2C70F73307C6}
+		{723705E3-C87B-4AF5-9AEB-81EBF1ADC413} = {723705E3-C87B-4AF5-9AEB-81EBF1ADC413}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestReferenceWithContracts", "Testing\WhiteTie.TestReferenceWithContracts\WhiteTie.TestReferenceWithContracts.csproj", "{A579EBB6-DF7F-4FF0-86F6-C73B68B6DAA2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.Dependency", "Testing\WhiteTie.TestFlavor.Dependency\WhiteTie.TestFlavor.Dependency.csproj", "{F609F3CE-4B60-4889-9B5A-F7FA2E4083D2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor", "Testing\WhiteTie.TestFlavor\WhiteTie.TestFlavor.csproj", "{66B54788-B1F7-4FB6-9022-6539D9CBFBEE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {97D15E18-1496-4197-A0B2-DA4E5F9549C4}
+		{98588041-495B-420E-9176-87C4DE6261F3} = {98588041-495B-420E-9176-87C4DE6261F3}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestAssemblyReference", "Testing\WhiteTie.TestAssemblyReference\WhiteTie.TestAssemblyReference.csproj", "{5A6D24F5-F9EE-4768-8766-0860E06BAFF2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestReferenceAssemblyReference", "Testing\WhiteTie.TestReferenceAssemblyReference\WhiteTie.TestReferenceAssemblyReference.csproj", "{E2A125DD-6E54-41A4-8FE0-B36556A475B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestReferenceProjectReference", "Testing\WhiteTie.TestReferenceProjectReference\WhiteTie.TestReferenceProjectReference.csproj", "{96F582F1-0ECB-4D60-AAED-2B40E140A93A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestDuplicateDependency", "Testing\WhiteTie.TestDuplicateDependency\WhiteTie.TestDuplicateDependency.csproj", "{F30B872E-62A2-4904-B1A5-5FBE08C2A857}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavor.DuplicateDependency", "Testing\WhiteTie.TestFlavor.DuplicateDependency\WhiteTie.TestFlavor.DuplicateDependency.csproj", "{98588041-495B-420E-9176-87C4DE6261F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavorDependency.Flavor", "Testing\WhiteTie.TestFlavorDependency.Flavor\WhiteTie.TestFlavorDependency.Flavor.csproj", "{C711F167-C808-480F-BD68-1C76FCEB3A85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WhiteTie.TestFlavorDependency.Primary", "Testing\WhiteTie.TestFlavorDependency.Primary\WhiteTie.TestFlavorDependency.Primary.csproj", "{56E91A54-6FBD-458B-BE33-2525C4C0D2D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07EA4CC7-8BAE-4507-8EA1-420DAE3818DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07EA4CC7-8BAE-4507-8EA1-420DAE3818DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EBA8179-0404-4D6C-BC26-41EC8A51396D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EBA8179-0404-4D6C-BC26-41EC8A51396D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{723705E3-C87B-4AF5-9AEB-81EBF1ADC413}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{723705E3-C87B-4AF5-9AEB-81EBF1ADC413}.Release|Any CPU.Build.0 = Release|Any CPU
+		{963483E2-BFD6-47D7-B581-2C70F73307C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{963483E2-BFD6-47D7-B581-2C70F73307C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB4DFE9D-8904-4074-8EF0-30493AF52CA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB4DFE9D-8904-4074-8EF0-30493AF52CA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3176CE3A-137E-4735-8139-3A73EF44711A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3176CE3A-137E-4735-8139-3A73EF44711A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FE426CC-F172-4740-B153-3DE5A91018A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FE426CC-F172-4740-B153-3DE5A91018A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0B4679B-5689-4D98-A710-9527471F3E0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0B4679B-5689-4D98-A710-9527471F3E0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28C70E31-45ED-415C-9E62-45B5685E6E51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28C70E31-45ED-415C-9E62-45B5685E6E51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A579EBB6-DF7F-4FF0-86F6-C73B68B6DAA2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A579EBB6-DF7F-4FF0-86F6-C73B68B6DAA2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F609F3CE-4B60-4889-9B5A-F7FA2E4083D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F609F3CE-4B60-4889-9B5A-F7FA2E4083D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66B54788-B1F7-4FB6-9022-6539D9CBFBEE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66B54788-B1F7-4FB6-9022-6539D9CBFBEE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A6D24F5-F9EE-4768-8766-0860E06BAFF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A6D24F5-F9EE-4768-8766-0860E06BAFF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2A125DD-6E54-41A4-8FE0-B36556A475B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2A125DD-6E54-41A4-8FE0-B36556A475B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96F582F1-0ECB-4D60-AAED-2B40E140A93A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96F582F1-0ECB-4D60-AAED-2B40E140A93A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98588041-495B-420E-9176-87C4DE6261F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98588041-495B-420E-9176-87C4DE6261F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C711F167-C808-480F-BD68-1C76FCEB3A85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C711F167-C808-480F-BD68-1C76FCEB3A85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56E91A54-6FBD-458B-BE33-2525C4C0D2D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56E91A54-6FBD-458B-BE33-2525C4C0D2D6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A1F1723F-3101-4C0B-8C05-C1E9EA300395} = {C945EC90-978A-4330-9A05-DAB8A803ED3F}
+		{281A2EA5-8B82-4BBC-A3DF-F4D0C882B728} = {C945EC90-978A-4330-9A05-DAB8A803ED3F}
+		{B26AC04F-7903-4462-9E11-FB3E29E49135} = {281A2EA5-8B82-4BBC-A3DF-F4D0C882B728}
+		{7C2EC833-CFDF-4A5F-AAB4-EF3EED4A87BA} = {CE8FDACA-03B8-430A-9AC5-E03BFA78C74F}
+		{ECD7179F-DC5B-4C5A-BE37-D4C47B018A9C} = {7C2EC833-CFDF-4A5F-AAB4-EF3EED4A87BA}
+		{067EAA75-8399-45B3-9870-40AF9D32DCD0} = {7C2EC833-CFDF-4A5F-AAB4-EF3EED4A87BA}
+		{97D15E18-1496-4197-A0B2-DA4E5F9549C4} = {A76F8D77-4A03-4A54-BBA0-1E8072C5A08D}
+		{6E9422A9-4A4B-4F5D-AE78-EB1662F6AE6A} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{07EA4CC7-8BAE-4507-8EA1-420DAE3818DE} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{9EBA8179-0404-4D6C-BC26-41EC8A51396D} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{723705E3-C87B-4AF5-9AEB-81EBF1ADC413} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{963483E2-BFD6-47D7-B581-2C70F73307C6} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{BB4DFE9D-8904-4074-8EF0-30493AF52CA9} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{3176CE3A-137E-4735-8139-3A73EF44711A} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{1FE426CC-F172-4740-B153-3DE5A91018A3} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{C0B4679B-5689-4D98-A710-9527471F3E0D} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{28C70E31-45ED-415C-9E62-45B5685E6E51} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{A579EBB6-DF7F-4FF0-86F6-C73B68B6DAA2} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{F609F3CE-4B60-4889-9B5A-F7FA2E4083D2} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{66B54788-B1F7-4FB6-9022-6539D9CBFBEE} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{5A6D24F5-F9EE-4768-8766-0860E06BAFF2} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{E2A125DD-6E54-41A4-8FE0-B36556A475B5} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{96F582F1-0ECB-4D60-AAED-2B40E140A93A} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{F30B872E-62A2-4904-B1A5-5FBE08C2A857} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{98588041-495B-420E-9176-87C4DE6261F3} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{C711F167-C808-480F-BD68-1C76FCEB3A85} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+		{56E91A54-6FBD-458B-BE33-2525C4C0D2D6} = {4AE3FF3D-F20B-4662-9A7A-DBE2F7F4E7EB}
+	EndGlobalSection
+EndGlobal

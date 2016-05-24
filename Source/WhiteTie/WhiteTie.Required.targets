@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2014 Dave Sexton
+
+See ReadMe.txt for details.
+
+White Tie needs to invoke certain targets in dependent project files that may not define them, either because
+they don't reference White Tie or because Code Contracts isn't installed, for example.
+
+The <MSBuild> Task requires that the targets specified are defined in the project file; otherwise, it throws.
+
+To solve this problem, this targets file ensures that all potentially missing targets needed by White Tie are 
+defined.  It is forcefully imported into dependent projects, via the <MSBuild> Task, before all other targets 
+are defined (so that in case White Tie is imported by a dependent project, it overrides the defaults with its 
+own targets; last target definition wins in MSBuild.)
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<!--
+	We must import this file to ensure that recursive dependency group targets are defined.
+	It cannot simply be a stub like some of the targets defined below because it's possible that
+	a referenced project doesn't use White Tie, in which case this file is required because it 
+	recursively identifies dependency projects' output.
+	
+	Note that I could define it here, but it must also be available to projects that use White Tie
+	and I don't want duplicates.
+	-->
+	<Import Project="$(MSBuildThisFileDirectory)\WhiteTie.Recursive.targets" />
+
+	<!--
+	We must import this file to ensure that ContractProjectOutputGroupWithRecursiveDependencies is defined.
+	It cannot simply be a stub like some of the targets defined below because it's possible that
+	a referenced project uses Code Contracts but not White Tie, in which case this file is required
+	because it supplements missing functionality in Microsoft's targets for Code Contracts; namely,
+	Microsoft's file doesn't define any targets with Returns or Outputs containing recursive
+	dependent contract assemblies from all referenced projects, including the target project.
+	
+	Note that I could define it here, but I also want it to be available to users when they 
+	reference White Tie and I don't want duplicates.
+	-->
+	<Import Project="$(MSBuildThisFileDirectory)\WhiteTie.CodeContracts.targets" />
+
+	<!--
+	We must import this file to ensure that NuGetPackageProjectOutputGroupWithDependencies is defined.
+	It cannot simply be a stub like some of the targets defined below because it's possible that
+	a referenced project doesn't use White Tie, in which case this file is required because it 
+	recursively identifies dependency projects that build NuGet packages using White Tie.
+	
+	Note that I could define it here, but it must also be available to projects that use White Tie
+	and I don't want duplicates.
+	-->
+	<Import Project="$(MSBuildThisFileDirectory)\WhiteTie.NuGet.Required.targets" />
+
+	<!--
+	The following target is defined in Microsoft.CodeContracts.targets (MSBuild 12.0; retrieved on 6/23/2014)
+	-->
+	<Target Name="CreateCodeContractReferenceAssembly" />
+
+	<!--
+	The following target is defined in WhiteTie.Documentation.targets
+	-->
+	<Target Name="CompiledDocumentationProjectOutputGroupWithDependencies" />
+
+	<!--
+	The following target is defined in WhiteTie.NuGet.targets
+	-->
+	<Target Name="NuGetFlavorRecursiveReferences" />
+
+	<!--
+	The following target is not defined by Microsoft, and since White Tie only needs it when 
+	evaluating referenced projects, it's only defined here.
+	-->
+	<Target Name="_WhiteTieGetTargetFramework" Returns="@(WhiteTieTargetFramework)">
+		<ItemGroup>
+			<WhiteTieTargetFramework Include="$(OutDir)$(TargetFilename)%(TargetExt)">
+				<Version>$(TargetFrameworkVersion)</Version>
+				<Identifier>$(TargetFrameworkIdentifier)</Identifier>
+				<Profile>$(TargetFrameworkProfile)</Profile>
+			</WhiteTieTargetFramework>
+		</ItemGroup>
+	</Target>
+
+</Project>

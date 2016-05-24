@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script type="text/javascript" src="data.js"></script>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script type="text/javascript">
+        $(function () {
+            var root = $("#root");
+
+            for (var i = 0; i < data.length; i++) {
+                var profile = data[i];
+                root.append($("<code/>").text(createPropertyGroup(
+                    profile.displayName,
+                    profile.nugetTarget,
+                    profile.profileName)))
+                    .append($("<br/>"));
+            }
+        });
+
+        function createPropertyGroup(name, libFolderName, targetFrameworkProfile) {
+            return "{ \"" + targetFrameworkProfile + "\", \"" + libFolderName + "\" },  // " + name;
+        }
+    </script>
+</head>
+<body>
+    <div>
+        Latest mappings retrieved on 6/16/2014 for VS2013 Update 2 with Xamarin 3 from <a href="http://embed.plnkr.co/03ck2dCtnJogBKHJ9EjY/preview">here</a>.
+        (<a href="http://embed.plnkr.co/03ck2dCtnJogBKHJ9EjY/data.js">Data.js</a>)
+    </div>
+    <div>
+        Script discovered via hyperlink from
+        <a href="http://docs.nuget.org/docs/creating-packages/creating-and-publishing-a-package#Grouping_Assemblies_by_Framework_Version">here</a>.
+    </div>
+    <pre id="root"></pre>
+</body>
+</html>

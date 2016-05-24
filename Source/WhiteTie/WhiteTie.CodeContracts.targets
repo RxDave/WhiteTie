@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2014 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+	WhiteTie.props
+	WhiteTie.targets
+
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<WhiteTieCodeContractsImported>True</WhiteTieCodeContractsImported>
+	</PropertyGroup>
+
+	<!-- CreateCodeContractReferenceAssembly and CodeContractsImported are defined in Microsoft.CodeContracts.targets (MSBuild 12.0; retrieved on 6/23/2014) -->
+
+	<Target Name="ContractProjectOutputGroup" DependsOnTargets="CreateCodeContractReferenceAssembly" Condition=" '$(CodeContractsImported)' == True "
+					Returns="@(ContractProjectOutputGroupOutput)">
+
+		<ItemGroup>
+			<!--
+			ContractReferenceAssembly is a singleton item list defined in Microsoft.CodeContracts.targets (MSBuild 12.0; retrieved on 7/5/2014)
+			-->
+			<ContractProjectOutputGroupOutput Include="@(ContractReferenceAssembly->'%(FullPath)')" Condition=" Exists('%(ContractReferenceAssembly.FullPath)') ">
+				<IsContractOutput>True</IsContractOutput>
+				<NuGetPackageProjects Condition=" '$(BuildPackage)' == True ">$(MSBuildProjectFullPath);%(ContractProjectOutputGroupOutput.NuGetPackageProjects)</NuGetPackageProjects>
+			</ContractProjectOutputGroupOutput>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="ContractProjectOutputGroupRecursiveDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies"
+					Returns="@(ContractProjectOutputGroupRecursiveDependency)">
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="ContractProjectOutputGroupWithRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="ContractProjectOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+	</Target>
+
+	<Target Name="ContractProjectOutputGroupWithRecursiveDependencies" DependsOnTargets="ContractProjectOutputGroup;ContractProjectOutputGroupRecursiveDependencies"
+					Returns="@(ContractProjectOutputGroupOutput);@(ContractProjectOutputGroupRecursiveDependency)">
+
+	</Target>
+
+</Project>

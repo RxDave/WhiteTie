@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2014 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+	WhiteTie.props
+	WhiteTie.targets
+
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<WhiteTieRecursiveImported>True</WhiteTieRecursiveImported>
+	</PropertyGroup>
+
+	<!-- BuiltProjectOutputGroupDependencies does a bit more than is needed, but it ensures that any MS-defined Before* tasks are executed.  ResolveReferences alone doesn't. -->
+	<Target Name="ProjectReferenceRecursiveDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies"
+					Returns="@(ProjectReferenceRecursiveDependency)">
+
+		<ItemGroup>
+			<ProjectReferenceRecursiveDependency Include="@(ProjectReferenceWithConfiguration->'%(FullPath)')" />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="ProjectReferenceRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="ProjectReferenceRecursiveDependency" />
+		</MSBuild>
+
+	</Target>
+
+	<!-- The following targets' DependsOnTargets are defined in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; retrieved on 6/22/2014) -->
+
+	<Target Name="BuiltProjectOutputGroupRecursiveDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies"
+					Returns="@(BuiltProjectOutputGroupRecursiveDependency)">
+
+		<ItemGroup>
+			<BuiltProjectOutputGroupRecursiveDependency Include="@(BuiltProjectOutputGroupDependency)" />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="BuiltProjectOutputGroupRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="BuiltProjectOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+		<ItemGroup Condition=" '$(BuildPackage)' == True ">
+			<BuiltProjectOutputGroupRecursiveDependency>
+				<NuGetPackageProjects>$(MSBuildProjectFullPath);%(BuiltProjectOutputGroupRecursiveDependency.NuGetPackageProjects)</NuGetPackageProjects>
+			</BuiltProjectOutputGroupRecursiveDependency>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="DocumentationProjectOutputGroupRecursiveDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies;DocumentationProjectOutputGroupDependencies"
+					Returns="@(DocumentationProjectOutputGroupRecursiveDependency)">
+
+		<ItemGroup>
+			<DocumentationProjectOutputGroupRecursiveDependency Include="@(DocumentationProjectOutputGroupDependency)" />
+
+			<DocumentationProjectOutputGroupRecursiveDependency Include="@(BuiltProjectOutputGroupDependency->'%(RelativeDir)%(Filename).xml')"
+																													Condition=" '%(BuiltProjectOutputGroupDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference'
+																																	AND '%(BuiltProjectOutputGroupDependency.FrameworkFile)' != True
+																																	AND '%(BuiltProjectOutputGroupDependency.IsSystemReference)' != True
+																																	AND '%(BuiltProjectOutputGroupDependency.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades'
+																																	AND Exists('%(BuiltProjectOutputGroupDependency.RelativeDir)%(BuiltProjectOutputGroupDependency.Filename).xml') " />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="DocumentationProjectOutputGroupRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="DocumentationProjectOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+		<ItemGroup Condition=" '$(BuildPackage)' == True ">
+			<DocumentationProjectOutputGroupRecursiveDependency>
+				<NuGetPackageProjects>$(MSBuildProjectFullPath);%(DocumentationProjectOutputGroupRecursiveDependency.NuGetPackageProjects)</NuGetPackageProjects>
+			</DocumentationProjectOutputGroupRecursiveDependency>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="DebugSymbolsProjectOutputGroupRecursiveDependencies" DependsOnTargets="DebugSymbolsProjectOutputGroupDependencies"
+					Returns="@(DebugSymbolsProjectOutputGroupRecursiveDependency)">
+
+		<ItemGroup>
+			<DebugSymbolsProjectOutputGroupRecursiveDependency Include="@(DebugSymbolsProjectOutputGroupDependency)" />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="DebugSymbolsProjectOutputGroupRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="DebugSymbolsProjectOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+		<ItemGroup Condition=" '$(BuildPackage)' == True ">
+			<DebugSymbolsProjectOutputGroupRecursiveDependency>
+				<NuGetPackageProjects>$(MSBuildProjectFullPath);%(DebugSymbolsProjectOutputGroupRecursiveDependency.NuGetPackageProjects)</NuGetPackageProjects>
+			</DebugSymbolsProjectOutputGroupRecursiveDependency>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="SatelliteDllsProjectOutputGroupRecursiveDependencies" DependsOnTargets="SatelliteDllsProjectOutputGroupDependencies"
+					Returns="@(SatelliteDllsProjectOutputGroupRecursiveDependency)">
+
+		<ItemGroup>
+			<SatelliteDllsProjectOutputGroupRecursiveDependency Include="@(SatelliteDllsProjectOutputGroupDependency)" />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="SatelliteDllsProjectOutputGroupRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="SatelliteDllsProjectOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+		<ItemGroup Condition=" '$(BuildPackage)' == True ">
+			<SatelliteDllsProjectOutputGroupRecursiveDependency>
+				<NuGetPackageProjects>$(MSBuildProjectFullPath);%(SatelliteDllsProjectOutputGroupRecursiveDependency.NuGetPackageProjects)</NuGetPackageProjects>
+			</SatelliteDllsProjectOutputGroupRecursiveDependency>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="SGenFilesOutputGroupRecursiveDependencies" DependsOnTargets="SGenFilesOutputGroupDependencies"
+					Returns="@(SGenFilesOutputGroupRecursiveDependency)">
+
+		<ItemGroup>
+			<SGenFilesOutputGroupRecursiveDependency Include="@(SGenFilesOutputGroupDependency)" />
+		</ItemGroup>
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="SGenFilesOutputGroupRecursiveDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="SGenFilesOutputGroupRecursiveDependency" />
+		</MSBuild>
+
+		<ItemGroup Condition=" '$(BuildPackage)' == True ">
+			<SGenFilesOutputGroupRecursiveDependency>
+				<NuGetPackageProjects>$(MSBuildProjectFullPath);%(SGenFilesOutputGroupRecursiveDependency.NuGetPackageProjects)</NuGetPackageProjects>
+			</SGenFilesOutputGroupRecursiveDependency>
+		</ItemGroup>
+
+	</Target>
+
+</Project>

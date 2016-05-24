@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<UsingTask TaskName="LogAllMetadata" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+		<ParameterGroup>
+			<Items ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="True" />
+			<IncludeWellKnown ParameterType="System.Boolean" Required="False" />
+		</ParameterGroup>
+		<Task>
+			<Using Namespace="System"/>
+			<Using Namespace="System.Linq"/>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+				var wellKnown = new[] { "FullPath", "RootDir", "Filename", "Extension", "RelativeDir", "Directory", "RecursiveDir", "Identity" };
+				
+				foreach (var item in Items)
+				{
+					Log.LogMessage(item.ItemSpec);
+
+					foreach (string metadata in item.MetadataNames)
+					{
+						if (IncludeWellKnown || !wellKnown.Contains(metadata))
+						{
+							try
+							{
+								Log.LogMessage("\t" + metadata + " = " + item.GetMetadata(metadata));
+							}
+							catch (InvalidOperationException)
+							{
+								if (metadata != "FullPath" && metadata != "RootDir" && metadata != "Filename" && metadata != "Extension" && metadata != "RelativeDir" && metadata != "Directory")
+								{
+									throw;
+								}
+							}
+						}
+					}
+				}
+				]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<Target Name="_CheckNoDependenciesInNuSpecFiles" AfterTargets="BuildPackage">
+
+		<ItemGroup Condition=" '$(AssemblyName.Contains(`Dependency`))' != True ">
+			<__NuSpecFilesWithMetadata_Dependency Include="%(_NuSpecFilesWithMetadata.Identity)"
+																						Condition=" '@(_NuSpecFilesWithMetadata->Contains(`Dependency`))' == True " />
+		</ItemGroup>
+
+		<Error Condition=" '@(__NuSpecFilesWithMetadata_Dependency)' != '' "
+					 Text="TEST FAILED: Found dependencies in .nuspec's &lt;files&gt; section.
+Files:
+@(__NuSpecFilesWithMetadata_Dependency, '
+')" />
+
+	</Target>
+
+	<Target Name="_CheckNoDependenciesInNuSpecReferences" AfterTargets="BuildPackage">
+
+		<ItemGroup Condition=" '$(AssemblyName.Contains(`Dependency`))' != True ">
+			<_NuSpecFileFlavorReferencesRaw Include="@(_NuSpecFileFlavorReferenceGroups->'%(References)')" />
+
+			<_NuSpecFileReferencesRaw_Dependency Include="%(_NuSpecFilePrimaryReferences.Identity)" Condition=" '@(_NuSpecFilePrimaryReferences->Contains(`Dependency`))' == True " />
+			<_NuSpecFileReferencesRaw_Dependency Include="%(_NuSpecFileFlavorReferencesRaw.Identity)" Condition=" '@(_NuSpecFileFlavorReferencesRaw->Contains(`Dependency`))' == True " />
+		</ItemGroup>
+
+		<Error Condition=" '@(_NuSpecFileReferencesRaw_Dependency)' != '' "
+					 Text="TEST FAILED: Found dependencies in .nuspec's &lt;references&gt; section.
+References:
+@(_NuSpecFileReferencesRaw_Dependency, '
+')" />
+
+	</Target>
+
+</Project>

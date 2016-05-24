@@ -1,0 +1,395 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2013 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+  WhiteTie.props
+
+-->
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <_WhiteTieRequiredTargetsFile>$(MSBuildThisFileDirectory)\WhiteTie.Required.targets</_WhiteTieRequiredTargetsFile>
+  </PropertyGroup>
+
+  <UsingTask TaskName="BetterXmlPeek" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <XmlInputPath Required="True" />
+      <Query Required="True" />
+      <AttributesAsMetadata Required="False" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+      <AdditionalMetadata Required="False" ParameterType="System.String[]" />
+      <Namespaces Required="False" />
+      <Result ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="True" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Xml"/>
+      <Reference Include="System.Xml.Linq"/>
+      <Using Namespace="System"/>
+      <Using Namespace="System.Collections.Generic"/>
+      <Using Namespace="System.Linq"/>
+      <Using Namespace="System.Xml"/>
+      <Using Namespace="System.Xml.XPath"/>
+      <Using Namespace="System.Xml.Linq"/>
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        var document = new XPathDocument(XmlInputPath);
+        var navigator = document.CreateNavigator();
+        var defaultNamespace = navigator.GetNamespace(string.Empty);
+        var resolver = new XmlNamespaceManager(navigator.NameTable);
+        var additionalMetadata = AdditionalMetadata == null
+                               ? new Dictionary<string, string>()
+                               : (from metadata in AdditionalMetadata
+                                  let pair = metadata.Split('=')
+                                  where pair.Length == 2
+                                  select new { key = pair[0], value = pair[1] })
+                                  .ToDictionary(pair => pair.key, pair => pair.value);
+        
+        if (AdditionalMetadata != null && additionalMetadata.Count != AdditionalMetadata.Length)
+        {
+          throw new ArgumentException("Invalid format for AdditionalMetadata parameter.  Expected semicolon-delimited, equal sign-delimited pairs; e.g., MyData1=Foo;MyData2=Bar");
+        }
+        
+        if (!additionalMetadata.ContainsKey("XmlInputPath"))
+        {
+          additionalMetadata.Add("XmlInputPath", XmlInputPath);
+        }
+          
+        if (!string.IsNullOrWhiteSpace(Namespaces))
+        {
+          var namespaces = XElement.Parse("<root>" + Namespaces + "</root>");
+            
+          foreach (var n in namespaces.Elements())
+          {
+            resolver.AddNamespace((string)n.Attribute("Prefix"), (string)n.Attribute("Uri"));
+          }
+        }
+        
+        var result = navigator.Evaluate(Query, resolver);
+        var iterator = result as XPathNodeIterator;
+            
+        if (iterator != null)
+        {						
+          Result = (from n in iterator.Cast<XPathNavigator>()
+                    select n.NodeType == XPathNodeType.Element
+                         ? new TaskItem(n.LocalName, 
+                            AttributesAsMetadata == null || AttributesAsMetadata.Length == 0
+                            ? (from metadata in new[] { new KeyValuePair<string, string>("Text", n.ToString()) }.Concat(additionalMetadata)
+                               select new
+                               {
+                                key = metadata.Key,
+                                value = metadata.Value
+                               })
+                               .ToDictionary(pair => pair.key, pair => pair.value)
+                            : (from attribute in AttributesAsMetadata
+                               select new
+                               {
+                                key = attribute.ItemSpec, 
+                                value = n.GetAttribute(attribute.ItemSpec, defaultNamespace)
+                               })
+                               .Concat(from metadata in additionalMetadata
+                                       select new
+                                       {
+                                        key = metadata.Key,
+                                        value = metadata.Value
+                                       })
+                               .ToDictionary(pair => pair.key, pair => pair.value))
+                         : new TaskItem(n.ToString(), additionalMetadata))
+                    .ToArray();
+        }
+        else
+        {
+          Result = result == null ? new ITaskItem[0] : new[] { new TaskItem(result.ToString(), additionalMetadata) };
+        }
+        ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.Recursive.targets" Condition=" '$(WhiteTieRecursiveImported)' != True " />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.CodeContracts.targets" Condition=" '$(WhiteTieCodeContractsImported)' != True " />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.Documentation.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.NuGet.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.NuGet.Required.targets" Condition=" '$(WhiteTieNuGetRequiredImported)' != True " />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.NuGet.VS.targets" Condition=" '$(VisualStudioVersion)' &gt;= 14.0 AND !Exists('$(SolutionDir).nuget\NuGet.targets') " />
+  <Import Project="$(MSBuildThisFileDirectory)\WhiteTie.Deployment.targets" />
+
+  <Target Name="EnsureWhiteTieTools" Returns="$(WhiteTieToolsDir)">
+
+    <PropertyGroup>
+      <WhiteTieToolsDir>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))Tools\</WhiteTieToolsDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(WhiteTieToolsDir)" />
+
+    <PropertyGroup>
+      <WhiteTieFileVersionProgramName>FileVersion</WhiteTieFileVersionProgramName>
+      <WhiteTieFileVersionProgram>$(WhiteTieToolsDir)$(WhiteTieFileVersionProgramName).bat</WhiteTieFileVersionProgram>
+      <_WhiteTieFileVersionProgramSource>
+        <![CDATA[@ECHO OFF
+SET File=%~f1
+SET FileEscaped=%File:\=\\%
+wmic datafile where Name="%FileEscaped%" get version /VALUE]]>
+      </_WhiteTieFileVersionProgramSource>
+    </PropertyGroup>
+
+    <WriteLinesToFile Condition=" Exists('$(WhiteTieFileVersionProgram)') != True " Lines="$(_WhiteTieFileVersionProgramSource.Replace(';', '%3B'))"
+                      File="$(WhiteTieFileVersionProgram)" Overwrite="True" />
+
+    <PropertyGroup>
+      <WhiteTieReflectionProgramVersionMajor>1</WhiteTieReflectionProgramVersionMajor>
+      <WhiteTieReflectionProgramVersionMinor>1</WhiteTieReflectionProgramVersionMinor>
+      <WhiteTieReflectionProgramVersionBuild>0</WhiteTieReflectionProgramVersionBuild>
+      <WhiteTieReflectionProgramVersionRevision>0</WhiteTieReflectionProgramVersionRevision>
+      <WhiteTieReflectionProgramVersion>$(WhiteTieReflectionProgramVersionMajor).$(WhiteTieReflectionProgramVersionMinor).$(WhiteTieReflectionProgramVersionBuild).$(WhiteTieReflectionProgramVersionRevision)</WhiteTieReflectionProgramVersion>
+      <WhiteTieReflectionProgramName>Reflect</WhiteTieReflectionProgramName>
+      <WhiteTieReflectionProgram>$(WhiteTieToolsDir)$(WhiteTieReflectionProgramName).exe</WhiteTieReflectionProgram>
+      <_WhiteTieReflectionProgramSourceFile>$(WhiteTieToolsDir)$(WhiteTieReflectionProgramName).cs</_WhiteTieReflectionProgramSourceFile>
+      <_MustBuildWhiteTieReflectionProgram>True</_MustBuildWhiteTieReflectionProgram>
+      <_MustBuildWhiteTieReflectionProgram Condition=" Exists('$(WhiteTieReflectionProgram)') == True ">False</_MustBuildWhiteTieReflectionProgram>
+      <_WhiteTieReflectionProgramCurrentFileVersionOutput>$(WhiteTieToolsDir)Reflect_Version.txt</_WhiteTieReflectionProgramCurrentFileVersionOutput>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(WhiteTieFileVersionProgram)&quot; &quot;$(WhiteTieReflectionProgram)&quot; &gt; &quot;$(_WhiteTieReflectionProgramCurrentFileVersionOutput)&quot;"
+          IgnoreExitCode="true" ContinueOnError="true"
+          Condition=" '$(_MustBuildWhiteTieReflectionProgram)' != True " />
+
+    <ReadLinesFromFile File="$(_WhiteTieReflectionProgramCurrentFileVersionOutput)" Condition=" Exists('$(_WhiteTieReflectionProgramCurrentFileVersionOutput)') ">
+      <Output TaskParameter="Lines" ItemName="_WhiteTieReflectionProgramCurrentFileVersionLines" />
+    </ReadLinesFromFile>
+
+    <Delete Files="$(_WhiteTieReflectionProgramCurrentFileVersionOutput)" Condition=" Exists('$(_WhiteTieReflectionProgramCurrentFileVersionOutput)') " ContinueOnError="True" />
+
+    <ItemGroup Condition=" '$(_MustBuildWhiteTieReflectionProgram)' != True ">
+      <_WhiteTieReflectionProgramCurrentFileVersionLines Remove="%(_WhiteTieReflectionProgramCurrentFileVersionLines.Identity)"
+                                                         Condition=" '@(_WhiteTieReflectionProgramCurrentFileVersionLines->Contains(`Version=`))' != True " />
+    </ItemGroup>
+
+    <PropertyGroup Condition=" '$(_MustBuildWhiteTieReflectionProgram)' != True AND '@(_WhiteTieReflectionProgramCurrentFileVersionLines)' != '' ">
+      <_WhiteTieReflectionProgramCurrentVersion>@(_WhiteTieReflectionProgramCurrentFileVersionLines->Substring(8))</_WhiteTieReflectionProgramCurrentVersion>
+      <_WhiteTieReflectionProgramCurrentVersionMinorIndex>$(_WhiteTieReflectionProgramCurrentVersion.IndexOf('.'))</_WhiteTieReflectionProgramCurrentVersionMinorIndex>
+      <_WhiteTieReflectionProgramCurrentVersionBuildIndex>$(_WhiteTieReflectionProgramCurrentVersion.IndexOf('.', $([MSBuild]::Add($(_WhiteTieReflectionProgramCurrentVersionMinorIndex), 1))))</_WhiteTieReflectionProgramCurrentVersionBuildIndex>
+      <_WhiteTieReflectionProgramCurrentVersionRevisionIndex>$(_WhiteTieReflectionProgramCurrentVersion.IndexOf('.', $([MSBuild]::Add($(_WhiteTieReflectionProgramCurrentVersionBuildIndex), 1))))</_WhiteTieReflectionProgramCurrentVersionRevisionIndex>
+
+      <_WhiteTieReflectionProgramCurrentVersionMinorLength>$([MSBuild]::Subtract($([MSBuild]::Subtract($(_WhiteTieReflectionProgramCurrentVersionBuildIndex), $(_WhiteTieReflectionProgramCurrentVersionMinorIndex))), 1))</_WhiteTieReflectionProgramCurrentVersionMinorLength>
+      <_WhiteTieReflectionProgramCurrentVersionBuildLength>$([MSBuild]::Subtract($([MSBuild]::Subtract($(_WhiteTieReflectionProgramCurrentVersionRevisionIndex), $(_WhiteTieReflectionProgramCurrentVersionBuildIndex))), 1))</_WhiteTieReflectionProgramCurrentVersionBuildLength>
+
+      <_WhiteTieReflectionProgramCurrentVersionMajor>$(_WhiteTieReflectionProgramCurrentVersion.Substring(0, $(_WhiteTieReflectionProgramCurrentVersionMinorIndex)).Trim())</_WhiteTieReflectionProgramCurrentVersionMajor>
+      <_WhiteTieReflectionProgramCurrentVersionMinor>$(_WhiteTieReflectionProgramCurrentVersion.Substring($([MSBuild]::Add($(_WhiteTieReflectionProgramCurrentVersionMinorIndex), 1)), $(_WhiteTieReflectionProgramCurrentVersionMinorLength)))</_WhiteTieReflectionProgramCurrentVersionMinor>
+      <_WhiteTieReflectionProgramCurrentVersionBuild>$(_WhiteTieReflectionProgramCurrentVersion.Substring($([MSBuild]::Add($(_WhiteTieReflectionProgramCurrentVersionBuildIndex), 1)), $(_WhiteTieReflectionProgramCurrentVersionBuildLength)))</_WhiteTieReflectionProgramCurrentVersionBuild>
+      <_WhiteTieReflectionProgramCurrentVersionRevision>$(_WhiteTieReflectionProgramCurrentVersion.Substring($([MSBuild]::Add($(_WhiteTieReflectionProgramCurrentVersionRevisionIndex), 1))).Trim())</_WhiteTieReflectionProgramCurrentVersionRevision>
+
+      <_MustBuildWhiteTieReflectionProgram Condition=" $(_WhiteTieReflectionProgramCurrentVersionMajor) &lt; $(WhiteTieReflectionProgramVersionMajor)
+                                                    OR ($(_WhiteTieReflectionProgramCurrentVersionMajor) == $(WhiteTieReflectionProgramVersionMajor)
+                                                    AND ($(_WhiteTieReflectionProgramCurrentVersionMinor) &lt; $(WhiteTieReflectionProgramVersionMinor)
+                                                    OR ($(_WhiteTieReflectionProgramCurrentVersionMinor) == $(WhiteTieReflectionProgramVersionMinor)
+                                                    AND ($(_WhiteTieReflectionProgramCurrentVersionBuild) &lt; $(WhiteTieReflectionProgramVersionBuild)
+                                                    OR ($(_WhiteTieReflectionProgramCurrentVersionBuild) == $(WhiteTieReflectionProgramVersionBuild)
+                                                    AND $(_WhiteTieReflectionProgramCurrentVersionRevision) &lt; $(WhiteTieReflectionProgramVersionRevision)))))) ">True</_MustBuildWhiteTieReflectionProgram>
+    </PropertyGroup>
+
+    <Message Importance="high" Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == True AND '$(_WhiteTieReflectionProgramCurrentVersion)' != '' "
+             Text="Rebuilding the White Tie reflection program '$(WhiteTieReflectionProgram)' because the current version '$(_WhiteTieReflectionProgramCurrentVersion)' is less than the new version '$(WhiteTieReflectionProgramVersion)'." />
+
+    <Message Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == False "
+             Text="The current version '$(_WhiteTieReflectionProgramCurrentVersion)' is greater than or equal to the latest version '$(WhiteTieReflectionProgramVersion)' of the White Tie reflection program '$(WhiteTieReflectionProgram)'." />
+
+    <PropertyGroup Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == True ">
+      <_WhiteTieReflectionProgramSource>
+        <![CDATA[
+// Copyright © 2014 Dave Sexton
+// http://whitetie.codeplex.com
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+
+[assembly: AssemblyFileVersion("$(WhiteTieReflectionProgramVersion)")]
+
+static class Program
+{
+  private const string semicolonEscape = "%3B";
+
+  private static void Main(string[] args)
+  {
+    if (args == null || args.Length != 3 || args.Any(string.IsNullOrWhiteSpace)) throw new ArgumentOutOfRangeException("Missing or invalid arguments.");
+
+    var targetAssembly = args[0];
+    var probingPaths = args[1].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(arg => arg.Replace(semicolonEscape, ";")).ToList();
+    var targetAttributes = args[2].Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).Select(arg => arg.Replace(semicolonEscape, ";")).ToList();
+    
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+    
+    Func<string, bool> check = file =>
+    {
+      // Console.WriteLine("Probing: " + file);
+      return File.Exists(file);
+    };
+
+    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, e) =>
+      {
+        var comma = e.Name.IndexOf(", ");
+        return (from path in probingPaths
+                from candidate in comma < 0 ? new[] { e.Name } : new[] { e.Name.Substring(0, comma), e.Name }
+                from qualified in new[] { candidate, candidate + ".dll", candidate + ".exe" }
+                let file = Path.Combine(path, qualified)
+                where check(file)
+                select Assembly.ReflectionOnlyLoadFrom(file))
+                .FirstOrDefault();
+      };
+
+    var assembly = Assembly.ReflectionOnlyLoadFrom(targetAssembly);
+    var name = assembly.GetName();
+    var attributes = assembly.GetCustomAttributesData().Concat(new CustomAttributeData[] {
+      // "Assembly Identity Attributes" aren't reflected, so add proxies instead.
+      new ConstructedCustomAttributeData<AssemblyVersionAttribute>(name.Version),
+      new ConstructedCustomAttributeData<AssemblyCultureAttribute>(name.CultureName),
+      new ConstructedCustomAttributeData<AssemblyFlagsAttribute>(name.Flags) })
+      .ToList();
+    
+    // Joining ensures that the output is in the same order as the input argument.
+    foreach (var pair in from attributeName in targetAttributes
+                         join attribute in attributes on attributeName equals attribute.AttributeType.FullName into joined
+                         from attribute in joined.DefaultIfEmpty()
+                         select new { attributeName, attribute })
+    {
+      Console.Write(pair.attributeName + "=");
+
+      var attribute = pair.attribute;
+      if (attribute != null)
+      {
+        var c = attribute.ConstructorArguments ?? new List<CustomAttributeTypedArgument>(0);
+        var n = attribute.NamedArguments ?? new List<CustomAttributeNamedArgument>(0);
+        var first = true;
+        foreach (var argument in c.Concat(n.Select(arg => arg.TypedValue)))
+        {
+          if (first) first = false;
+          else Console.Write(";");
+          Console.Write(argument.Value.ToString().Replace(";", semicolonEscape));
+        }
+      }
+      
+      Console.WriteLine();
+    }
+  }
+
+  private sealed class ConstructedCustomAttributeData<T> : CustomAttributeData
+    where T : Attribute
+  {
+    public override ConstructorInfo Constructor { get { return typeof(T).GetConstructors()[0]; } }
+    public override IList<CustomAttributeTypedArgument> ConstructorArguments { get { return args; } }
+    private readonly List<CustomAttributeTypedArgument> args = new List<CustomAttributeTypedArgument>();
+    public ConstructedCustomAttributeData(params object[] arguments)
+    {
+      foreach (var arg in arguments) args.Add(new CustomAttributeTypedArgument(arg));
+    }
+  }
+}]]>
+      </_WhiteTieReflectionProgramSource>
+    </PropertyGroup>
+
+    <WriteLinesToFile Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == True "
+                      Lines="$(_WhiteTieReflectionProgramSource.Replace(';', '%3B'))"
+                      File="$(_WhiteTieReflectionProgramSourceFile)" Overwrite="True" Encoding="UTF-8" />
+
+    <Csc Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == True "
+         Optimize="True" EmitDebugInformation="True" MainEntryPoint="Program" NoLogo="True" References="System.Core.dll"
+         UseHostCompilerIfAvailable="True" Sources="$(_WhiteTieReflectionProgramSourceFile)"
+         OutputAssembly="$(WhiteTieReflectionProgram)" />
+
+    <Delete Files="$(_WhiteTieReflectionProgramSourceFile)" ContinueOnError="True" Condition=" '$(_MustBuildWhiteTieReflectionProgram)' == True " />
+
+  </Target>
+
+  <!--
+    GetTargetFrameworkDirectories and TargetFrameworkDirectory are defined by MSBuild 12.0 in Microsoft.Common.CurrentVersion.targets; retrieved on 11/1/2014
+
+    TargetFrameworkDirectory is a semicolon-delimited list of Framework "reference" directories for the output assembly and all referenced assemblies.
+  -->
+  <Target Name="GetCommonAssemblyAttributes" DependsOnTargets="EnsureWhiteTieTools;GetTargetFrameworkDirectories;CoreCompile"
+          Returns="$(TargetAssemblyTitle);$(TargetAssemblyDescription);$(TargetAssemblyConfiguration);$(TargetAssemblyProduct);$(TargetAssemblyCompany);$(TargetAssemblyCopyright);$(TargetAssemblyVersion);$(TargetAssemblyInformationalVersion)">
+
+    <ItemGroup>
+      <_PrepareCommonAttributes Include="AssemblyTitle;AssemblyDescription;AssemblyConfiguration;AssemblyProduct;AssemblyCompany;AssemblyCopyright;AssemblyVersion;AssemblyInformationalVersion" />
+    </ItemGroup>
+
+    <!-- Get the actual runtime Framework directory, whch is given precedence over the Framework "reference" directories. -->
+    <GetFrameworkPath>
+      <Output TaskParameter="Path" PropertyName="_TargetFrameworkPath" />
+    </GetFrameworkPath>
+
+    <PropertyGroup>
+      <_PrepareCommonAttributesResolved>@(_PrepareCommonAttributes->'System.Reflection.%(Identity)Attribute')</_PrepareCommonAttributesResolved>
+
+      <_TargetAssemblyAttributesProbe>$(_TargetFrameworkPath);$(TargetFrameworkDirectory)</_TargetAssemblyAttributesProbe>
+      <_TargetAssemblyAttributesOutput>$(WhiteTieToolsDir)Temp\Attributes.txt</_TargetAssemblyAttributesOutput>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(WhiteTieToolsDir)Temp\" />
+
+    <!-- A trailing space is required in the _TargetAssemblyAttributesProbe quoted literal in case it ends with a trailing \, which causes the trailing quote to be escaped. -->
+    <Exec Command="&quot;$(WhiteTieReflectionProgram)&quot; &quot;$(TargetFilename)&quot; &quot;$(_TargetAssemblyAttributesProbe) &quot; &quot;$(_PrepareCommonAttributesResolved)&quot; &gt; &quot;$(_TargetAssemblyAttributesOutput)&quot;"
+          WorkingDirectory="$(IntermediateOutputPath)" />
+
+    <ReadLinesFromFile File="$(_TargetAssemblyAttributesOutput)">
+      <Output TaskParameter="Lines" ItemName="_TargetAssemblyAttributesRaw" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <_TargetAssemblyAttributes Include="$([System.String]::Copy('%(_TargetAssemblyAttributesRaw.Identity)').Split('=').GetValue(0))">
+        <Value>$([System.String]::Copy('%(_TargetAssemblyAttributesRaw.Identity)').Split('=').GetValue(1))</Value>
+      </_TargetAssemblyAttributes>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TargetAssemblyTitle Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyTitleAttribute' ">%(Value)</TargetAssemblyTitle>
+      <TargetAssemblyDescription Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyDescriptionAttribute' ">%(Value)</TargetAssemblyDescription>
+      <TargetAssemblyConfiguration Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyConfigurationAttribute' ">%(Value)</TargetAssemblyConfiguration>
+      <TargetAssemblyProduct Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyProductAttribute' ">%(Value)</TargetAssemblyProduct>
+      <TargetAssemblyCompany Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyCompanyAttribute' ">%(Value)</TargetAssemblyCompany>
+      <TargetAssemblyCopyright Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyCopyrightAttribute' ">%(Value)</TargetAssemblyCopyright>
+      <TargetAssemblyVersion Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyVersionAttribute' ">%(Value)</TargetAssemblyVersion>
+      <TargetAssemblyInformationalVersion Condition=" '%(_TargetAssemblyAttributes.Identity)' == 'System.Reflection.AssemblyInformationalVersionAttribute' ">%(Value)</TargetAssemblyInformationalVersion>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(WhiteTieToolsDir)Temp\" ContinueOnError="True" />
+
+  </Target>
+
+  <Target Name="GetPreRelease" DependsOnTargets="GetCommonAssemblyAttributes" Returns="$(PreRelease)">
+
+    <PropertyGroup>
+      <_AssemblyInfoVersionRegEx>^\s*\d+(\.\d+){0,3}-(.+)\s*$</_AssemblyInfoVersionRegEx>
+
+      <TargetAssemblySemanticVersion>$([System.Text.RegularExpressions.Regex]::Match('$(TargetAssemblyInformationalVersion)', '$(_AssemblyInfoVersionRegEx)').Groups.get_Item(2))</TargetAssemblySemanticVersion>
+      <TargetAssemblyInformationalVersionIsSemantic Condition=" '$(TargetAssemblySemanticVersion)' != '' ">True</TargetAssemblyInformationalVersionIsSemantic>
+      <TargetAssemblyInformationalVersionIsSemantic Condition=" '$(TargetAssemblySemanticVersion)' == '' ">False</TargetAssemblyInformationalVersionIsSemantic>
+
+      <PreRelease Condition=" '$(PreRelease)' == '' ">$(TargetAssemblySemanticVersion)</PreRelease>
+    </PropertyGroup>
+
+    <Error Condition=" '$(PreRelease)' != '' AND '$(TargetAssemblySemanticVersion)' != '' AND '$(PreRelease)' != '$(TargetAssemblySemanticVersion)' "
+           Text="The PreRelease property has been specified for this project, yet its value differs from the semantic value found in the AssemblyInformationalVersionAttribute of the output assembly.
+PreRelease: $(PreRelease)
+ Attribute: $(TargetAssemblyInformationalVersion)" />
+
+  </Target>
+
+  <Target Name="_SetStaticAnalysis" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+
+      <!-- FxCop -->
+      <RunCodeAnalysis Condition=" '$(StaticAnalysisEnabled)' != '' ">$(StaticAnalysisEnabled)</RunCodeAnalysis>
+
+      <!-- StyleCop -->
+      <SourceAnalysisEnabled Condition=" '$(StaticAnalysisEnabled)' != '' ">$(StaticAnalysisEnabled)</SourceAnalysisEnabled>
+
+      <!-- Code Contracts -->
+      <CodeContractsRunCodeAnalysis Condition=" '$(StaticAnalysisEnabled)' != '' ">$(StaticAnalysisEnabled)</CodeContractsRunCodeAnalysis>
+
+    </PropertyGroup>
+  </Target>
+
+</Project>

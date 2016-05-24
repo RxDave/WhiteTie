@@ -1,0 +1,662 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2013 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+	WhiteTie.props
+	WhiteTie.targets
+
+-->
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<_SHFBBuildHelpTaskExists Condition=" Exists('$(SandcastleInstallDir)SandcastleBuilder.Utils.dll') ">True</_SHFBBuildHelpTaskExists>
+	</PropertyGroup>
+
+	<UsingTask TaskName="SandcastleBuilder.Utils.MSBuild.BuildHelp" AssemblyFile="$(SandcastleInstallDir)SandcastleBuilder.Utils.dll"
+						 Condition=" '$(_SHFBBuildHelpTaskExists)' == True " />
+
+	<PropertyGroup>
+		<BuildDocumentationDependsOn>
+			_PrepareBuildDocumentation;
+			_SandcastleBuildDocumentation;
+		</BuildDocumentationDependsOn>
+	</PropertyGroup>
+	<Target Name="BuildDocumentation" AfterTargets="Build" BeforeTargets="_WhiteTieBuildPackage;Deploy" DependsOnTargets="$(BuildDocumentationDependsOn)"
+					Condition=" '$(BuildDocumentationEnabled)' == True "
+					Returns="$(CompiledDocumentationFile)">
+
+		<Error Condition=" '$(_SHFBBuildHelpTaskExists)' != True "
+					 Text="Cannot build documentation because Sandcastle's task was not found.  Make sure that the Sandcastle Help File Builder is installed. (http://shfb.codeplex.com)" />
+
+	</Target>
+
+	<PropertyGroup>
+		<_PrepareBuildDocumentationDependsOn>
+			GetCommonAssemblyAttributes;
+			GetPreRelease;
+			<!--
+			These targets are defined in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; retrieved on 6/22/2014)
+			-->
+			BuiltProjectOutputGroup;
+			BuiltProjectOutputGroupDependencies;
+			DocumentationProjectOutputGroup;
+			DocumentationProjectOutputGroupDependencies
+		</_PrepareBuildDocumentationDependsOn>
+	</PropertyGroup>
+	<Target Name="_PrepareBuildDocumentation" DependsOnTargets="$(_PrepareBuildDocumentationDependsOn)">
+
+		<PropertyGroup>
+			<_DocumentationProjectName Condition=" '$(DocumentationProjectName)' == '' ">$(TargetAssemblyTitle)</_DocumentationProjectName>
+			<_DocumentationProjectName Condition=" '$(DocumentationProjectName)' != '' ">$(DocumentationProjectName)</_DocumentationProjectName>
+
+			<_DocumentationProductName Condition=" '$(DocumentationProductName)' == '' ">$(TargetAssemblyProduct)</_DocumentationProductName>
+			<_DocumentationProductName Condition=" '$(DocumentationProductName)' != '' ">$(DocumentationProductName)</_DocumentationProductName>
+
+			<_DocumentationCompanyName Condition=" '$(DocumentationCompanyName)' == '' ">$(TargetAssemblyCompany)</_DocumentationCompanyName>
+			<_DocumentationCompanyName Condition=" '$(DocumentationCompanyName)' != '' ">$(DocumentationCompanyName)</_DocumentationCompanyName>
+
+			<_DocumentationCopyright Condition=" '$(DocumentationCopyright)' == '' ">$(TargetAssemblyCopyright)</_DocumentationCopyright>
+			<_DocumentationCopyright Condition=" '$(DocumentationCopyright)' != '' ">$(DocumentationCopyright)</_DocumentationCopyright>
+
+			<_DocumentationVersion Condition=" '$(DocumentationVersion)' == '' ">$(TargetAssemblyVersion)</_DocumentationVersion>
+			<_DocumentationVersion Condition=" '$(DocumentationVersion)' != '' ">$(DocumentationVersion)</_DocumentationVersion>
+
+			<_DocumentationFeedbackLinkText Condition=" '$(DocumentationFeedbackLinkText)' == '' ">Send Feedback to $(_DocumentationCompanyName)</_DocumentationFeedbackLinkText>
+			<_DocumentationFeedbackLinkText Condition=" '$(DocumentationFeedbackLinkText)' != '' ">$(DocumentationFeedbackLinkText)</_DocumentationFeedbackLinkText>
+
+			<_DocumentationPreliminary Condition=" '$(_DocumentationPreliminary)' == '' AND '$(PreRelease)' == '' ">False</_DocumentationPreliminary>
+			<_DocumentationPreliminary Condition=" '$(_DocumentationPreliminary)' == '' AND '$(PreRelease)' != '' ">True</_DocumentationPreliminary>
+		</PropertyGroup>
+
+		<PropertyGroup>
+			<_DocumentationIntermediateOutDir>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))Docs\</_DocumentationIntermediateOutDir>
+
+			<CompiledDocumentationFile>$(OutDir)$(_DocumentationProjectName).chm</CompiledDocumentationFile>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<_DocumentationImage Include="@(DocumentationImage)">
+				<ImageId Condition=" '%(DocumentationImage.ImageId)' == '' ">%(DocumentationImage.Filename)</ImageId>
+				<ImageId Condition=" '%(DocumentationImage.ImageId)' != '' ">%(DocumentationImage.ImageId)</ImageId>
+			</_DocumentationImage>
+
+			<!-- FinalOutputPath is typically the bin folder, rather than the obj folder that Identity typically references. -->
+			<_DocumentationSourceFinalOutputPath Include="@(BuiltProjectOutputGroupOutput)"
+																					 Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' != '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True ">
+				<!-- Sometimes it's rooted and sometimes it's relative to the project; e.g., FinalOutputPath for XML doc files seems to always be relative. -->
+				<FinalOutputPath>$([System.IO.Path]::GetFullPath('%(FinalOutputPath)'))</FinalOutputPath>
+			</_DocumentationSourceFinalOutputPath>
+
+			<_DocumentationSource Include="@(_DocumentationSourceFinalOutputPath->'%(FinalOutputPath)')" KeepMetadata="Identity" KeepDuplicates="False" />
+			<_DocumentationSource Include="@(BuiltProjectOutputGroupOutput)" KeepMetadata="Identity" KeepDuplicates="False"
+														Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' == '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True " />
+
+			<_DocumentationSource Include="@(DocumentationProjectOutputGroupOutput)" KeepMetadata="Identity" KeepDuplicates="False"
+														Condition=" '%(DocumentationProjectOutputGroupOutput.IsKeyOutput)' == True " />
+
+			<_DocumentationSource Include="@(BuiltProjectOutputGroupDependency)" KeepMetadata="Identity" KeepDuplicates="False"
+														Condition=" '%(BuiltProjectOutputGroupDependency.ReferenceSourceTarget)' == 'ProjectReference'
+																		AND '%(BuiltProjectOutputGroupDependency.ReferenceOutputAssembly)' == True
+																		AND '%(BuiltProjectOutputGroupDependency.FrameworkFile)' != True
+																		AND '%(BuiltProjectOutputGroupDependency.IsSystemReference)' != True
+                                    AND '%(BuiltProjectOutputGroupDependency.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' " />
+
+			<_DocumentationSource Include="@(DocumentationProjectOutputGroupDependency)" KeepMetadata="Identity" KeepDuplicates="False"
+														Condition=" '%(DocumentationProjectOutputGroupDependency.ReferenceSourceTarget)' == 'ProjectReference'
+																		AND '%(DocumentationProjectOutputGroupDependency.ReferenceOutputAssembly)' == True " />
+
+			<_DocumentationSource Include="@(DocumentationSource)" KeepMetadata="Identity" KeepDuplicates="False" />
+			<_DocumentationSource Include="%(DocumentationSource.RelativeDir)%(DocumentationSource.Filename).xml" KeepMetadata="Identity" KeepDuplicates="False"
+														Condition=" Exists('%(DocumentationSource.RelativeDir)%(DocumentationSource.Filename).xml') " />
+
+			<_DocumentationReference Include="@(DocumentationReference)" KeepMetadata="Identity" />
+			<_DocumentationReference Include="%(Reference.HintPath)" Condition=" '%(Reference.HintPath)' != '' " KeepDuplicates="False" />
+
+			<_DocumentationFrameworkReference Include="@(DocumentationFrameworkReference)" KeepMetadata="Identity" />
+
+			<!--
+			Framework files may be required by MRefBuilder in some cases yet SHFB doesn't provide them automatically.
+			For example, the current project may target .NET 4.5 and it may reference a portable library.  White Tie reports to SHFB that we're targeting the 
+			full .NET framework, so MRefBuilder fails to resolve System.Runtime.dll for the portable library, since SHFB didn't provide it.  MSBuild provides 
+			the required framework assemblies as part of the BuiltProjectOutputGroupDependency item list, so they can simply be added as documentation references.
+			-->
+			<_DocumentationFrameworkReference Include="@(BuiltProjectOutputGroupDependency)" KeepMetadata="Identity" KeepDuplicates="False"
+																				Condition=" '%(BuiltProjectOutputGroupDependency.ReferenceSourceTarget)' == 'ProjectReference'
+																								AND '%(BuiltProjectOutputGroupDependency.ReferenceOutputAssembly)' == True
+																								AND ('%(BuiltProjectOutputGroupDependency.FrameworkFile)' == True
+																										OR '%(BuiltProjectOutputGroupDependency.IsSystemReference)' == True
+                                                    OR '%(BuiltProjectOutputGroupDependency.ResolvedFrom)' == 'ImplicitlyExpandDesignTimeFacades') " />
+
+			<_DocumentationReference Include="@(_DocumentationFrameworkReference)" KeepMetadata="Identity" KeepDuplicates="False" />
+
+			<_DocumentationReference>
+				<IsFrameworkReference Condition=" '%(Identity)' != 'FORCE_BATCH' AND '@(_DocumentationFrameworkReference)' != '' ">True</IsFrameworkReference>
+			</_DocumentationReference>
+		</ItemGroup>
+
+		<RemoveDir Directories="$(_DocumentationIntermediateOutDir)" />
+		<MakeDir Directories="$(_DocumentationIntermediateOutDir)" />
+
+	</Target>
+
+	<PropertyGroup>
+		<_SandcastleBuildDocumentationDependsOn>
+			_PrepareSandcastleBuildDocumentation;
+			_PrepareSandcastleProjectFileComponents;
+			_PrepareSandcastleProjectFile;
+		</_SandcastleBuildDocumentationDependsOn>
+	</PropertyGroup>
+	<Target Name="_SandcastleBuildDocumentation" DependsOnTargets="$(_SandcastleBuildDocumentationDependsOn)"
+					Condition=" '$(_SHFBBuildHelpTaskExists)' == True "
+					Inputs="@(_DocumentationSource);@(_DocumentationReference)"
+					Outputs="$(CompiledDocumentationFile)">
+
+		<SandcastleBuilder.Utils.MSBuild.BuildHelp ProjectFile="$(_SHFBProjectFile)" AlwaysLoadProject="True"
+																							 Configuration="$(Configuration)" Platform="$(Platform)" OutDir="$(_DocumentationIntermediateOutDir)">
+			<Output TaskParameter="AllHelpFiles" ItemName="_IntermediateDocumentation" />
+		</SandcastleBuilder.Utils.MSBuild.BuildHelp>
+
+		<Copy SourceFiles="@(_IntermediateDocumentation)" DestinationFolder="$(OutDir)" />
+
+		<ItemGroup>
+			<_IntermediateIntellisense Include="$(_DocumentationIntermediateOutDir)*.xml" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(_IntermediateIntellisense)" DestinationFolder="$(OutDir)" />
+
+		<RemoveDir Directories="$(_DocumentationIntermediateOutDir)" Condition=" '$(_SHFBKeepWorkingFolderAfterBuild)' != True " ContinueOnError="True" />
+
+		<ItemGroup>
+			<Documentation Include="@(_IntermediateDocumentation->'$(OutDir)%(Filename)%(Extension)')" />
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="_PrepareSandcastleBuildDocumentation">
+		<PropertyGroup>
+			<_SHFBWorkingPath>$([System.IO.Path]::GetFullPath('$(IntermediateOutputPath)'))Sandcastle\</_SHFBWorkingPath>
+			<_SHFBProjectFile>$(_DocumentationIntermediateOutDir)Sandcastle.proj</_SHFBProjectFile>
+
+			<_SHFBKeepWorkingFolderAfterBuild Condition=" '$(_SHFBKeepWorkingFolderAfterBuild)' == '' ">False</_SHFBKeepWorkingFolderAfterBuild>
+			<_SHFBBuildLogFile Condition=" '$(_SHFBBuildLogFile)' == '' "></_SHFBBuildLogFile>
+
+			<_SandcastleSchemaVersion Condition=" '$(_SandcastleSchemaVersion)' == '' ">1.9.9.0</_SandcastleSchemaVersion>
+			<_SandcastleProjectFileToolsVersion Condition=" '$(_SandcastleProjectFileToolsVersion)' == '' ">4.0</_SandcastleProjectFileToolsVersion>
+			<_SandcastleCleanIntermediates Condition=" '$(_SandcastleCleanIntermediates)' == '' ">True</_SandcastleCleanIntermediates>
+			<_SandcastleKeepLogFile Condition=" '$(_SandcastleKeepLogFile)' == '' ">False</_SandcastleKeepLogFile>
+
+			<_SandcastleCopyrightUrl Condition=" '$(_SandcastleCopyrightUrl)' == '' "></_SandcastleCopyrightUrl>
+			<_SandcastleVisibleItems Condition=" '$(_SandcastleVisibleItems)' == '' ">Attributes, ExplicitInterfaceImplementations, InheritedMembers, InheritedFrameworkMembers, Protected, ProtectedInternalAsProtected</_SandcastleVisibleItems>
+
+			<!-- IncludeTargets is basically a nop.  An empty value causes SHFB to crash. -->
+			<_SandcastleMissingTags Condition=" '$(_SandcastleMissingTags)' == '' ">IncludeTargets</_SandcastleMissingTags>
+
+			<_SandcastleCodeBlockComponentBasePath Condition=" '$(_SandcastleCodeBlockComponentBasePath)' == '' ">$(MSBuildProjectDirectory)\</_SandcastleCodeBlockComponentBasePath>
+
+			<_SandcastleIntelliSenseOutputEnabled Condition=" '$(_SandcastleIntelliSenseOutputEnabled)' == '' ">true</_SandcastleIntelliSenseOutputEnabled>
+			<_SandcastleCodeRemoveRegionMarkers Condition=" '$(_SandcastleCodeRemoveRegionMarkers)' == '' ">false</_SandcastleCodeRemoveRegionMarkers>
+			<_SandcastleHelpFileFormat Condition=" '$(_SandcastleHelpFileFormat)' == '' ">HtmlHelp1</_SandcastleHelpFileFormat>
+			<_SandcastleSdkLinkTarget Condition=" '$(_SandcastleSdkLinkTarget)' == '' ">Blank</_SandcastleSdkLinkTarget>
+			<_SandcastleSyntaxFilters Condition=" '$(_SandcastleSyntaxFilters)' == '' ">Standard</_SandcastleSyntaxFilters>
+			<_SandcastleHelp2SdkLinkType Condition=" '$(_SandcastleHelp2SdkLinkType)' == '' ">Msdn</_SandcastleHelp2SdkLinkType>
+			<_SandcastleContentPlacement Condition=" '$(_SandcastleContentPlacement)' == '' ">AboveNamespaces</_SandcastleContentPlacement>
+			<_SandcastleNamingMethod Condition=" '$(_SandcastleNamingMethod)' == '' ">Guid</_SandcastleNamingMethod>
+			<_SandcastlePreliminary Condition=" '$(_SandcastlePreliminary)' == '' ">$(_DocumentationPreliminary)</_SandcastlePreliminary>
+			<_SandcastleBuildAssemblerVerbosity Condition=" '$(_SandcastleBuildAssemblerVerbosity)' == '' ">OnlyWarningsAndErrors</_SandcastleBuildAssemblerVerbosity>
+			<_SandcastleNamespaceGrouping Condition=" '$(_SandcastleNamespaceGrouping)' == '' ">True</_SandcastleNamespaceGrouping>
+			<_SandcastleMaximumGroupParts Condition=" '$(_SandcastleMaximumGroupParts)' == '' ">2</_SandcastleMaximumGroupParts>
+			<_SandcastleCatalogName Condition=" '$(_SandcastleCatalogName)' == '' ">VisualStudio12</_SandcastleCatalogName>
+
+			<_SHFBApiFilter Condition=" '$(_SHFBApiFilter)' == '' "><![CDATA[<ApiFilter />]]></_SHFBApiFilter>
+
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">.NET Framework $(TargetFrameworkVersion.Substring(1))</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == '.NETPortable' AND '$(TargetFrameworkVersion)' == 'v4.0' ">.NET Portable Library 4.0 (Legacy)</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == '.NETPortable' AND '$(TargetFrameworkVersion)' != 'v4.0' ">.NET Portable Library $(TargetFrameworkVersion.Substring(1))</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == 'WindowsPhone' ">.NET for Windows Phone Silverlight ($(TargetFrameworkVersion.Substring(1)))</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == 'Silverlight' ">Silverlight $(TargetFrameworkVersion.Substring(1, 1))</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == '.NETCore' AND '$(TargetPlatformVersion)' == '8.0' ">.NET for Windows Store Apps</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == '.NETCore' AND '$(TargetPlatformVersion)' != '8.0' ">.NET for Windows Store Apps ($(TargetPlatformVersion))</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == 'WindowsPhoneApp' AND '$(TargetPlatformVersion)' == '8.0' ">.NET for Windows Phone</_SHFBFrameworkVersion>
+			<_SHFBFrameworkVersion Condition=" '$(TargetFrameworkIdentifier)' == 'WindowsPhoneApp' AND '$(TargetPlatformVersion)' != '8.0' ">.NET for Windows Phone Store Apps ($(TargetPlatformVersion))</_SHFBFrameworkVersion>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<_SandcastleHelpAttribute Include="DocSet">
+				<Value>{@HtmlHelpName}</Value>
+			</_SandcastleHelpAttribute>
+
+			<_SandcastleHelpAttribute Include="DocSet">
+				<Value>NetFramework</Value>
+			</_SandcastleHelpAttribute>
+
+			<_SandcastleHelpAttribute Include="TargetOS">
+				<Value>Windows</Value>
+			</_SandcastleHelpAttribute>
+
+			<_SHFBNamespaceSummaries Include="@(DocumentationNamespace)">
+				<Document Condition=" '%(DocumentationNamespace.Summary)' != '' ">True</Document>
+				<Document Condition=" '%(DocumentationNamespace.Summary)' == '' ">False</Document>
+			</_SHFBNamespaceSummaries>
+
+			<!-- logoFile, logoHeight, logoWidth, logoAltText, logoPlacement, logoAlignment, maxVersionParts, defaultLanguage -->
+			<_SHFBTransformArguments Condition=" '%(_SHFBTransformArguments.Value)' == '' ">
+				<Value></Value>
+			</_SHFBTransformArguments>
+
+			<_SHFBImage Include="@(_DocumentationImage)" />
+
+			<_SHFBContentLayoutFile Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.content'
+																																				 OR '%(DocumentationContent.Extension)' == '.contents'
+																																				 OR '%(DocumentationContent.Extension)' == '.layout'
+																																				 OR '%(DocumentationContent.Extension)' == '.contentlayout'
+																																				 OR '%(DocumentationContent.Extension)' == '.toc' " />
+
+			<_SHFBTokensFile Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.tokens'
+																																	OR '%(DocumentationContent.Extension)' == '.token' " />
+
+			<_SHFBCodeSnippet Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.snippets'
+																																	 OR '%(DocumentationContent.Extension)' == '.snippet'
+																																	 OR '%(DocumentationContent.Extension)' == '.code'
+																																	 OR '%(DocumentationContent.Extension)' == '.codesnippet'
+																																	 OR '%(DocumentationContent.Extension)' == '.codesnippets' " />
+
+			<_SHFBResourceItems Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.items'
+																																		 OR '%(DocumentationContent.Extension)' == '.resource'
+																																		 OR '%(DocumentationContent.Extension)' == '.resources'
+																																		 OR '%(DocumentationContent.Extension)' == '.resourceitem'
+																																		 OR '%(DocumentationContent.Extension)' == '.resourceitems' " />
+
+			<_SHFBSiteMap Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.sitemap'
+																															 OR '%(DocumentationContent.Extension)' == '.site'
+																															 OR '%(DocumentationContent.Extension)' == '.map' " />
+
+			<_SHFBNone Include="@(DocumentationContent)" Condition=" '%(DocumentationContent.Extension)' == '.aml' " />
+
+			<_SHFBContent Include="@(DocumentationContent)"
+										Exclude="@(_SHFBContentLayoutFile);@(_SHFBTokensFile);@(_SHFBCodeSnippet);@(_SHFBResourceItems);@(_SHFBSiteMap);@(_SHFBNone)" />
+
+		</ItemGroup>
+
+		<ItemGroup>
+			<_SHFBImage Condition=" '%(_SHFBImage.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBImage>
+
+			<_SHFBContentLayoutFile Condition=" '%(_SHFBContentLayoutFile.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBContentLayoutFile>
+
+			<_SHFBTokensFile Condition=" '%(_SHFBTokensFile.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBTokensFile>
+
+			<_SHFBCodeSnippet Condition=" '%(_SHFBCodeSnippet.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBCodeSnippet>
+
+			<_SHFBResourceItems Condition=" '%(_SHFBResourceItems.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBResourceItems>
+
+			<_SHFBSiteMap Condition=" '%(_SHFBSiteMap.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBSiteMap>
+
+			<_SHFBNone Condition=" '%(_SHFBNone.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBNone>
+
+			<_SHFBContent Condition=" '%(_SHFBContent.Link)' == '' AND $([System.String]::Copy('%(FullPath)').StartsWith('$(MSBuildProjectDirectory)')) != True ">
+				<Link>&lt;Link&gt;%(Filename)%(Extension)&lt;/Link&gt;</Link>
+			</_SHFBContent>
+		</ItemGroup>
+
+		<RemoveDir Directories="$(_SHFBWorkingPath)" />
+		<MakeDir Directories="$(_SHFBWorkingPath)" />
+
+	</Target>
+
+	<Target Name="_PrepareSandcastleProjectFileComponents" DependsOnTargets="_PrepareSandcastleBuildDocumentation">
+
+		<ItemGroup>
+			<SandcastleComponent Condition=" '%(SandcastleComponent.FullConfig)' == '' ">
+				<FullConfig>
+					<![CDATA[
+<ComponentConfig id="%(Identity)" enabled="%(Enabled)">
+  <component id="%(Identity)">%(Config)</component>
+</ComponentConfig>]]>
+				</FullConfig>
+			</SandcastleComponent>
+		</ItemGroup>
+
+		<PropertyGroup>
+			<_SHFBHasCodeBlockComponent>@(SandcastleComponent->AnyHaveMetadataValue('Identity', 'Code Block Component'))</_SHFBHasCodeBlockComponent>
+			<_SHFBHasTokenComponent>@(SandcastleComponent->AnyHaveMetadataValue('Identity', 'API Token Resolution'))</_SHFBHasTokenComponent>
+			<_SHFBHasIntelliSenseComponent>@(SandcastleComponent->AnyHaveMetadataValue('Identity', 'IntelliSense Component'))</_SHFBHasIntelliSenseComponent>
+
+			<_SHFBCodeBlockComponentStart>
+				<![CDATA[
+<ComponentConfig id="Code Block Component" enabled="True">
+  <component id="Code Block Component">
+    <basePath value="$(_SandcastleCodeBlockComponentBasePath)" />
+    <outputPaths>{@HelpFormatOutputPaths}</outputPaths>
+    <allowMissingSource value="false" />
+    <removeRegionMarkers value="$(_SandcastleCodeRemoveRegionMarkers)" />]]>
+			</_SHFBCodeBlockComponentStart>
+			<_SHFBCodeBlockComponentEnd>
+				<![CDATA[
+  </component>
+</ComponentConfig>]]>
+			</_SHFBCodeBlockComponentEnd>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<SandcastleColorizer Condition=" '%(SandcastleColorizer.FullConfig)' == '' ">
+				<FullConfig>
+					<![CDATA[
+<colorizer syntaxFile="%(SyntaxFile)" styleFile="%(StyleFile)" stylesheet="%(Stylesheet)" scriptFile="%(ScriptFile)"
+					 language="%(Identity)" tabSize="%(TabSize)" numberLines="%(NumberLines)" outlining="%(Outlining)"
+					 keepSeeTags="%(KeepSeeTags)" defaultTitle="%(DefaultTitle)" />]]>
+				</FullConfig>
+			</SandcastleColorizer>
+
+			<_SHFBCodeBlockComponent Include="$(_SHFBCodeBlockComponentStart)" />
+			<_SHFBCodeBlockComponent Include="%(SandcastleColorizer.FullConfig)" />
+			<_SHFBCodeBlockComponent Include="$(_SHFBCodeBlockComponentEnd)" />
+
+			<SandcastleComponent Include="Code Block Component" Condition=" '$(_SHFBHasCodeBlockComponent)' != True ">
+				<FullConfig>@(_SHFBCodeBlockComponent, '%0D%0A')</FullConfig>
+			</SandcastleComponent>
+
+			<SandcastleComponent Include="API Token Resolution" Condition=" '$(_SHFBHasTokenComponent)' != True ">
+				<FullConfig>
+					<![CDATA[
+<ComponentConfig id="API Token Resolution" enabled="True">
+  <component id="API Token Resolution">
+		{@TokenFiles}
+		<replace elements="/*//token" item="string(.)" />
+	</component>
+</ComponentConfig>]]>
+				</FullConfig>
+			</SandcastleComponent>
+
+			<SandcastleComponent Include="IntelliSense Component" Condition=" '$(_SHFBHasIntelliSenseComponent)' != True ">
+				<FullConfig>
+					<![CDATA[
+<ComponentConfig id="IntelliSense Component" enabled="$(_SandcastleIntelliSenseOutputEnabled)">
+  <component id="IntelliSense Component">
+    <output includeNamespaces="true" namespacesFile="Namespaces" folder="{@OutputFolder}" />
+  </component>
+</ComponentConfig>]]>
+				</FullConfig>
+			</SandcastleComponent>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="_PrepareSandcastleProjectFile" DependsOnTargets="_PrepareBuildDocumentation;_PrepareSandcastleProjectFileComponents">
+
+		<PropertyGroup>
+			<_OpenTag><![CDATA[<]]></_OpenTag>
+			<_CloseTag><![CDATA[>]]></_CloseTag>
+
+			<_SHFBProjectFileRequiredProperties>
+				<![CDATA[
+		<SchemaVersion>2.0</SchemaVersion>
+		<SHFBSchemaVersion>$(_SandcastleSchemaVersion)</SHFBSchemaVersion>
+		<WorkingPath>$(_SHFBWorkingPath)</WorkingPath>
+		<CleanIntermediates>$(_SandcastleCleanIntermediates)</CleanIntermediates>
+		<BuildLogFile>$(_SHFBBuildLogFile)</BuildLogFile>
+		<OutputPath>$(_DocumentationIntermediateOutDir)</OutputPath>
+		<HtmlHelpName>$(_DocumentationProjectName)</HtmlHelpName>
+		<ProjectSummary>$(DocumentationProjectSummary)</ProjectSummary>
+		<MissingTags>$(_SandcastleMissingTags)</MissingTags>
+		<VisibleItems>$(_SandcastleVisibleItems)</VisibleItems>
+		<HtmlHelp1xCompilerPath />
+		<HtmlHelp2xCompilerPath />
+		<FrameworkVersion>$(_SHFBFrameworkVersion)</FrameworkVersion>
+		<IndentHtml>True</IndentHtml>
+		<RootNamespaceContainer>$(DocumentationRootTopicEnabled)</RootNamespaceContainer>
+		<RootNamespaceTitle>$(DocumentationRootTopicTitle)</RootNamespaceTitle>
+		<CopyrightHref>$(_SandcastleCopyrightUrl)</CopyrightHref>
+		<CopyrightText>$(_DocumentationCopyright)</CopyrightText>
+		<FeedbackEMailAddress>$(DocumentationFeedbackEmail)</FeedbackEMailAddress>
+		<FeedbackEMailLinkText>$(_DocumentationFeedbackLinkText)</FeedbackEMailLinkText>
+		<HeaderText>$(DocumentationHeader)</HeaderText>
+		<FooterText>$(DocumentationFooter)</FooterText>
+		<PresentationStyle>$(DocumentationStyle)</PresentationStyle>
+		<HelpFileVersion>$(_DocumentationVersion)</HelpFileVersion>
+		<HelpFileFormat>$(_SandcastleHelpFileFormat)</HelpFileFormat>
+    <SdkLinkTarget>$(_SandcastleSdkLinkTarget)</SdkLinkTarget>
+    <Version>$(_DocumentationVersion)</Version>
+    <HelpTitle>$(_DocumentationProjectName)</HelpTitle>
+    <SyntaxFilters>$(_SandcastleSyntaxFilters)</SyntaxFilters>
+    <KeepLogFile>$(_SandcastleKeepLogFile)</KeepLogFile>
+    <Language>$(DocumentationLanguage)</Language>
+    <ProductTitle>$(_DocumentationProductName)</ProductTitle>
+    <VendorName>$(_DocumentationCompanyName)</VendorName>
+    <MSHelp2SdkLinkType>$(_SandcastleHelp2SdkLinkType)</MSHelp2SdkLinkType>
+    <ContentPlacement>$(_SandcastleContentPlacement)</ContentPlacement>
+    <NamingMethod>$(_SandcastleNamingMethod)</NamingMethod>
+    <DisableCodeBlockComponent>False</DisableCodeBlockComponent>
+		<Preliminary>$(_SandcastlePreliminary)</Preliminary>
+    <CppCommentsFixup>False</CppCommentsFixup>
+    <CatalogProductId>VS</CatalogProductId>
+    <MSHelpViewerSdkLinkType>Msdn</MSHelpViewerSdkLinkType>
+    <BuildAssemblerVerbosity>$(_SandcastleBuildAssemblerVerbosity)</BuildAssemblerVerbosity>
+    <NamespaceGrouping>$(_SandcastleNamespaceGrouping)</NamespaceGrouping>
+		<MaximumGroupParts>$(_SandcastleMaximumGroupParts)</MaximumGroupParts>
+    <CatalogName>$(_SandcastleCatalogName)</CatalogName>
+    <ComponentPath />]]>
+			</_SHFBProjectFileRequiredProperties>
+
+			<_SHFBProjectFileComponents>
+				<![CDATA[
+		<ComponentConfigurations>@(SandcastleComponent->'
+			%(FullConfig)', '')
+		</ComponentConfigurations>]]>
+			</_SHFBProjectFileComponents>
+
+			<_SHFBProjectFileDocumentationSources>
+				<![CDATA[
+		<DocumentationSources>@(_DocumentationSource->'
+			<DocumentationSource sourceFile="%(FullPath)" />', '')
+    </DocumentationSources>]]>
+			</_SHFBProjectFileDocumentationSources>
+
+			<_SHFBProjectFileReferences>
+				<![CDATA[@(_DocumentationReference->'
+		<Reference Include="%(FullPath)" />', '')]]>
+			</_SHFBProjectFileReferences>
+
+			<_SHFBProjectFileHelpAttributes>
+				<![CDATA[
+    <HelpAttributes>@(_SandcastleHelpAttribute->'
+			<HelpAttribute name="%(Identity)" value="%(Value)" />', '')
+    </HelpAttributes>]]>
+			</_SHFBProjectFileHelpAttributes>
+
+			<_SHFBProjectFileNamespaceSummaries>
+				<![CDATA[
+		<NamespaceSummaries>
+			<NamespaceSummaryItem name="(global)" isDocumented="False" />@(_SHFBNamespaceSummaries->'
+			<NamespaceSummaryItem name="%(Identity)" isDocumented="%(Document)">$(_OpenTag)![CDATA[%(Summary)]]$(_CloseTag)</NamespaceSummaryItem>', '')
+    </NamespaceSummaries>]]>
+			</_SHFBProjectFileNamespaceSummaries>
+
+			<_SHFBProjectFilePlugIns>
+				<![CDATA[
+		<PlugInConfigurations>@(_SHFBPlugIn->'
+			<PlugInConfig id="%(Include)" enabled="True">
+				%(Config)
+			</PlugInConfig>', '')
+    </PlugInConfigurations>]]>
+			</_SHFBProjectFilePlugIns>
+
+			<_SHFBProjectFileApiFilter>
+				$(_SHFBApiFilter)
+			</_SHFBProjectFileApiFilter>
+
+			<_SHFBProjectFileTransformComponentArgs>
+				<![CDATA[
+    <TransformComponentArguments>@(_SHFBTransformArguments->'
+			<Argument Key="%(Identity)" Value="%(Value)" />', '')
+    </TransformComponentArguments>]]>
+			</_SHFBProjectFileTransformComponentArgs>
+
+			<_SHFBProjectFileProperties>
+				@(_SHFBProjectFileProperties, '
+				')
+			</_SHFBProjectFileProperties>
+
+			<_SHFBProjectFileImages>
+				<![CDATA[@(_SHFBImage->'
+		<Content Include="%(Identity)">
+			<ImageId>$(_OpenTag)![CDATA[%(ImageId)]]$(_CloseTag)</ImageId>
+			<AlternateText>$(_OpenTag)![CDATA[%(AlternateText)]]$(_CloseTag)</AlternateText>
+			%(Link)
+		</Content>', '')@(_SHFBImage->'
+		<Image Include="%(Identity)">
+			<ImageId>$(_OpenTag)![CDATA[%(ImageId)]]$(_CloseTag)</ImageId>
+			<AlternateText>$(_OpenTag)![CDATA[%(AlternateText)]]$(_CloseTag)</AlternateText>
+			%(Link)
+		</Image>', '')]]>
+			</_SHFBProjectFileImages>
+
+			<_SHFBProjectFileCodeSnippets>
+				<![CDATA[@(_SHFBCodeSnippet->'
+		<CodeSnippets Include="%(Identity)">
+			%(Link)
+		</CodeSnippets>', '')]]>
+			</_SHFBProjectFileCodeSnippets>
+
+			<_SHFBProjectFileTokens>
+				<![CDATA[@(_SHFBTokensFile->'
+		<Tokens Include="%(Identity)">
+			%(Link)
+		</Tokens>', '')]]>
+			</_SHFBProjectFileTokens>
+
+			<_SHFBProjectFileContent>
+				<![CDATA[@(_SHFBContent->'
+		<Content Include="%(Identity)">
+			%(Link)
+		</Content>', '')]]>
+			</_SHFBProjectFileContent>
+
+			<_SHFBProjectFileNone>
+				<![CDATA[@(_SHFBNone->'
+		<None Include="%(Identity)">
+			%(Link)
+		</None>', '')]]>
+			</_SHFBProjectFileNone>
+
+			<_SHFBProjectFileContentLayout>
+				<![CDATA[@(_SHFBContentLayoutFile->'
+		<ContentLayout Include="%(Identity)">
+			%(Link)
+		</ContentLayout>', '')]]>
+			</_SHFBProjectFileContentLayout>
+
+			<_SHFBProjectFileResources>
+				<![CDATA[@(_SHFBResourceItems->'
+		<ResourceItems Include="%(Identity)">
+			%(Link)
+		</ResourceItems>', '')]]>
+			</_SHFBProjectFileResources>
+
+			<_SHFBProjectFileSiteMap>
+				<![CDATA[@(_SHFBSiteMap->'
+		<SiteMap Include="%(Identity)">
+			%(Link)
+		</SiteMap>', '')]]>
+			</_SHFBProjectFileSiteMap>
+
+			<_SHFBProjectFileItems>
+				@(_SHFBProjectFileItems, '
+				')
+			</_SHFBProjectFileItems>
+
+			<_SHFBProjectFileXmlDefinition>
+				<![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="$(_SandcastleProjectFileToolsVersion)">
+  <PropertyGroup>
+    $(_SHFBProjectFileRequiredProperties)
+    $(_SHFBProjectFileComponents)
+    $(_SHFBProjectFileDocumentationSources)
+		$(_SHFBProjectFileHelpAttributes)
+    $(_SHFBProjectFileNamespaceSummaries)
+    $(_SHFBProjectFilePlugIns)
+    $(_SHFBProjectFileApiFilter)
+		$(_SHFBProjectFileTransformComponentArgs)
+		$(_SHFBProjectFileProperties)
+  </PropertyGroup>
+  <ItemGroup>
+		$(_SHFBProjectFileReferences)
+		$(_SHFBProjectFileContentLayout)
+		$(_SHFBProjectFileContent)
+		$(_SHFBProjectFileNone)
+    $(_SHFBProjectFileImages)
+    $(_SHFBProjectFileCodeSnippets)
+    $(_SHFBProjectFileTokens)
+		$(_SHFBProjectFileResources)
+		$(_SHFBProjectFileItems)
+  </ItemGroup>
+  <Import Project="%24(SHFBROOT)\SandcastleHelpFileBuilder.targets" />
+</Project>]]>
+			</_SHFBProjectFileXmlDefinition>
+		</PropertyGroup>
+
+		<WriteLinesToFile File="$(_SHFBProjectFile)" Overwrite="True" Lines="$(_SHFBProjectFileXmlDefinition.Replace(';', '%3B'))" Encoding="UTF-8" />
+
+	</Target>
+
+	<!--
+	These names may seem strange, but they follow the conventions of similar tasks/items in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; as of 6/22/2014)
+	-->
+	<Target Name="CompiledDocumentationProjectOutputGroup" DependsOnTargets="BuildDocumentation"
+					Returns="@(CompiledDocumentationProjectOutputGroupOutput)">
+
+		<ItemGroup>
+			<CompiledDocumentationProjectOutputGroupOutput Include="@(Documentation)">
+				<ReferenceSourceTarget>CompiledDocumentationProjectOutputGroup</ReferenceSourceTarget>
+			</CompiledDocumentationProjectOutputGroupOutput>
+		</ItemGroup>
+
+	</Target>
+
+	<!--
+	These names may seem strange, but they follow the conventions of similar tasks/items in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; as of 6/22/2014)
+	-->
+	<Target Name="CompiledDocumentationProjectOutputGroupDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies"
+					Returns="@(CompiledDocumentationProjectOutputGroupDependency)">
+
+		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="CompiledDocumentationProjectOutputGroupWithDependencies"
+						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+			<Output TaskParameter="TargetOutputs" ItemName="CompiledDocumentationProjectOutputGroupDependency" />
+		</MSBuild>
+
+	</Target>
+
+	<Target Name="CompiledDocumentationProjectOutputGroupWithDependencies" DependsOnTargets="CompiledDocumentationProjectOutputGroup;CompiledDocumentationProjectOutputGroupDependencies"
+					Returns="@(CompiledDocumentationProjectOutputGroupOutput);@(CompiledDocumentationProjectOutputGroupDependency)">
+
+	</Target>
+
+	<Target Name="CleanDocumentation" AfterTargets="Clean"
+					Condition=" '$(BuildDocumentationEnabled)' == True ">
+
+		<ItemGroup>
+			<_DocsFilesToDelete Include="$(OutDir)*.chm" />
+		</ItemGroup>
+
+		<Delete Files="@(_DocsFilesToDelete)" />
+
+	</Target>
+
+</Project>

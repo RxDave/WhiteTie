@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <!-- NuGet 2.5 is required for MSBuild support (i.e., the build\ subfolder). -->
+  <!-- NuGet 2.8 is required for <developmentDependency> support. -->
+  <metadata minClientVersion="2.8">
+    <id>WhiteTie</id>
+    <version>1.3.15</version>
+    <title>White Tie</title>
+    <authors>Dave Sexton</authors>
+    <owners>Dave Sexton</owners>
+    <licenseUrl>https://whitetie.codeplex.com/license</licenseUrl>
+    <projectUrl>https://whitetie.codeplex.com</projectUrl>
+    <iconUrl>http://davesexton.com/Images/WhiteTie/WhiteTie.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Provides MSBuild properties and targets that automatically enable static analysis tools, NuGet packaging, documentation generation and local deployment.  No configuration necessary.</description>
+    <summary>MSBuild properties and targets related to static analysis, NuGet packaging, documentation generation and local deployment.</summary>
+    <releaseNotes>https://whitetie.codeplex.com/releases</releaseNotes>
+    <copyright>Copyright © 2013-2016 Dave Sexton</copyright>
+    <language>en-us</language>
+    <tags>MSBuild, Build, Targets, Project, NuGet, Package, Deploy</tags>
+    <developmentDependency>true</developmentDependency>
+  </metadata>
+  <files>
+    <file src="ReadMe.txt" target="ReadMe.txt" />
+    <file src="WhiteTie.props" target="build\WhiteTie.props" />
+    <file src="WhiteTie.targets" target="build\WhiteTie.targets" />
+    <file src="WhiteTie.Required.targets" target="build\WhiteTie.Required.targets" />
+    <file src="WhiteTie.Recursive.targets" target="build\WhiteTie.Recursive.targets" />
+    <file src="WhiteTie.CodeContracts.targets" target="build\WhiteTie.CodeContracts.targets" />
+    <file src="WhiteTie.Documentation.targets" target="build\WhiteTie.Documentation.targets" />
+    <file src="WhiteTie.NuGet.targets" target="build\WhiteTie.NuGet.targets" />
+    <file src="WhiteTie.NuGet.Required.targets" target="build\WhiteTie.NuGet.Required.targets" />
+    <file src="WhiteTie.NuGet.VS.targets" target="build\WhiteTie.NuGet.VS.targets" />
+    <file src="WhiteTie.Deployment.targets" target="build\WhiteTie.Deployment.targets" />
+  </files>
+</package>

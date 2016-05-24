@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2014 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+  WhiteTie.props
+  WhiteTie.targets
+  WhiteTie.NuGet.targets
+  
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <WhiteTieNuGetRequiredImported>True</WhiteTieNuGetRequiredImported>
+  </PropertyGroup>
+
+  <Target Name="NuGetPackageProjectOutputGroup" DependsOnTargets="Build;BuildPackage" Condition=" '$(_WhiteTieNuGetExe)' != '' "
+          Returns="@(NuGetPackageProjectOutputGroupOutput)">
+
+    <ItemGroup Condition=" '$(PackageOutputDir)' != '' AND '$(NuGetTargetLibFrameworkFolderName)' != '' AND '$(_NuSpecId)' != '' AND '$(_NuSpecVersion)' != '' ">
+      <NuGetPackageProjectOutputGroupOutput Include="$(PackageOutputDir)\$(_NuSpecId).$(_NuSpecVersion).nupkg">
+        <LibFrameworkFolderName>$(NuGetTargetLibFrameworkFolderName)</LibFrameworkFolderName>
+        <PackageId>$(_NuSpecId)</PackageId>
+        <PackageVersion>$(_NuSpecVersion)</PackageVersion>
+        <IsDevelopmentDependency>$(_NuSpecDevelopmentDependency)</IsDevelopmentDependency>
+      </NuGetPackageProjectOutputGroupOutput>
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="NuGetPackageProjectOutputGroupDependencies" DependsOnTargets="BuiltProjectOutputGroupDependencies"
+          Returns="@(NuGetPackageProjectOutputGroupDependency)">
+
+    <MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="NuGetPackageProjectOutputGroupWithDependencies"
+             Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(MSBuildThisFileDirectory)\WhiteTie.Required.targets"
+             RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="NuGetPackageProjectOutputGroupDependency" />
+    </MSBuild>
+
+  </Target>
+
+  <Target Name="NuGetPackageProjectOutputGroupWithDependencies" DependsOnTargets="NuGetPackageProjectOutputGroup;NuGetPackageProjectOutputGroupDependencies"
+          Returns="@(NuGetPackageProjectOutputGroupOutput);@(NuGetPackageProjectOutputGroupDependency)">
+
+  </Target>
+
+</Project>

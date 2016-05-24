@@ -1,0 +1,58 @@
+Specification for Building NuGet Packages
+-----------------------------------------
+
+If BuildPackage == True ...
+
+Gather:
+
+ P = All primary project's output (.dll, .xml, .pdb, .Contracts.dll, .chm)
+ F = All NuGetFlavor projects' output (.dll, .xml, .pdb, .Contracts.dll)
+PD = All primary project's dependencies (packages.config)
+FD = All NuGetFlavor projects' dependencies (packages.config)
+If PackageReferencedProjects == True
+	 R = All recursively referenced non-dependency projects' output (.dll, .xml, .pdb, .Contracts.dll)
+	RN = All recursively referenced dependency projects' output (.nupkg)
+	RD = All recursively referenced dependency projects' dependencies (packages.config)
+	FR = All NuGetFlavor projects' recursively referenced non-dependency projects' output (.dll, .xml, .pdb, .Contracts.dll)
+ FRN = All NuGetFlavor projects' recursively referenced dependency projects' output (.nupkg)
+ FRD = All NuGetFlavor projects' recursively referenced dependency projects' dependencies (packages.config)
+
+Generate .nuspec file:
+
+<files>
+P,R,F,FR (.dll, .Contracts.dll)
+If PackageXmlDocumentation == True
+	P,R,F,FR (.xml)
+If PackageSymbols == True
+	P,R,F,FR (.pdb)
+If PackageCompiledDocumentation == True
+	P (.chm)
+If PackageContent == True
+	All primary project's Content items
+	All NuGetFlavor projects' Content items
+All NuGetPackage items
+
+<references>
+If <files> contains any .Contracts.dll assemblies
+	<group targetFramework="{primary lib}">
+		P,R (.dll)
+	For Each NuGetFlavor
+		<group targetFramework="{NuGetFlavor lib}">
+			F,FR (.dll)
+	...
+Else omit <references> entirely
+
+<dependencies>
+If PD or FD or RN or RD or FRN or FRD or NuGetDependency.Count() > 0
+	Gather set of distinct target lib names: {Primary, NuGetFlavor[, NuGetFlavor...]}
+	Place all dependencies in ??
+
+	<group targetFramework="{primary lib}">
+		
+	For Each NuGetFlavor
+		<group targetFramework="{NuGetFlavor lib}">
+			
+	...
+Else omit <dependencies> entirely
+
+

@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{97D15E18-1496-4197-A0B2-DA4E5F9549C4}</ProjectGuid>
+    <AppDesignerFolder>
+    </AppDesignerFolder>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TestPackageFolder>..\..\packages\WhiteTie.0.0.1\</TestPackageFolder>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyName>WhiteTie</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <NuSpec Include="WhiteTie.nuspec" />
+    <Compile Include="WhiteTie.props">
+      <SubType>Designer</SubType>
+    </Compile>
+    <Compile Include="WhiteTie.targets">
+      <SubType>Designer</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.NuGet.targets">
+      <SubType>Designer</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.Documentation.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.Deployment.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.Required.targets" />
+    <Compile Include="WhiteTie.CodeContracts.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.NuGet.Required.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.Recursive.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="WhiteTie.NuGet.VS.targets">
+      <SubType>Designer</SubType>
+    </Compile>
+  </ItemGroup>
+  <Target Name="Build">
+    <Exec Command="..\..\.nuget\NuGet pack WhiteTie.nuspec -OutputDirectory &quot;$(OutputPath)\&quot;" />
+  </Target>
+  <Target Name="Rebuild">
+    <CallTarget Targets="Clean;Build" />
+  </Target>
+  <Target Name="Clean">
+    <ItemGroup>
+      <_Files Include="$(OutputPath)\*.nupkg" />
+    </ItemGroup>
+    <Delete Files="@(_Files)" />
+  </Target>
+  <Target Name="DeployForTesting" AfterTargets="Build">
+    <ItemGroup>
+      <_Package Include="$(OutputPath)*.nupkg" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NuSpec)" DestinationFiles="$(TestPackageFolder)WhiteTie.0.0.1.nuspec" />
+    <Copy SourceFiles="@(_Package)" DestinationFiles="$(TestPackageFolder)WhiteTie.0.0.1.nupkg" />
+    <Copy SourceFiles="@(Compile)" DestinationFolder="$(TestPackageFolder)Build" />
+  </Target>
+</Project>

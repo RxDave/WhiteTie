@@ -1,0 +1,244 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2013 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+  WhiteTie.targets
+  
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+  Directory Structure
+  -->
+  <PropertyGroup>
+    <!-- SolutionDir is relative to this file assuming that it's located in a package within the solution's packages folder. -->
+    <SolutionDir Condition=" '$(SolutionDir)' == '' OR '$(SolutionDir)' == '*Undefined*' ">$(MSBuildThisFileDirectory)..\..\..\</SolutionDir>
+    <SourceDir Condition=" '$(SourceDir)' == '' ">$(SolutionDir)Source\</SourceDir>
+    <BuildDir Condition=" '$(BuildDir)' == '' ">$(SolutionDir)Build\</BuildDir>
+    <DeploymentDir Condition=" '$(DeploymentDir)' == '' ">$(SolutionDir)Deployment\</DeploymentDir>
+    <TestingDir Condition=" '$(TestingDir)' == '' ">$(SolutionDir)Testing\</TestingDir>
+    <NuGetDir Condition=" '$(NuGetDir)' == '' AND '$(VisualStudioVersion)' &gt;= 14.0 ">$(MSBuildThisFileDirectory).nuget\</NuGetDir>
+    <NuGetDir Condition=" '$(NuGetDir)' == '' ">$(SolutionDir).nuget\</NuGetDir>
+    <NuGetPackagesDir Condition=" '$(NuGetPackagesDir)' == '' ">$(SolutionDir)packages\</NuGetPackagesDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProjectDeployDirBase>$(DeploymentDir)$(Configuration)\$(MSBuildProjectName)\</ProjectDeployDirBase>
+    <ProjectDeployDir Condition=" '$(ProjectDeployDir)' == '' ">$(ProjectDeployDirBase)</ProjectDeployDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(SandcastleInstallDir)' == '' ">
+    <!-- SHFBROOT environment variable is defined by Sandcastle when it's installed. -->
+    <SandcastleInstallDir Condition=" '$(SHFBROOT)' != '' AND HasTrailingSlash('$(SHFBROOT)') ">$(SHFBROOT)</SandcastleInstallDir>
+    <SandcastleInstallDir Condition=" '$(SHFBROOT)' != '' AND !HasTrailingSlash('$(SHFBROOT)') ">$(SHFBROOT)\</SandcastleInstallDir>
+    <SandcastleInstallDir Condition=" '$(SHFBROOT)' == '' ">$(MSBuildProgramFiles32)\EWSoftware\Sandcastle Help File Builder\</SandcastleInstallDir>
+  </PropertyGroup>
+
+  <!--
+  Boolean Properties
+  -->
+  <PropertyGroup>
+    <!-- Ex: Alpha, Beta, RC, etc. -->
+    <PreRelease Condition=" '$(PreRelease)' == '' "></PreRelease>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(DeploymentEnabled)' == '' ">
+    <DeploymentEnabled Condition=" '$(Configuration)' == 'Release' ">True</DeploymentEnabled>
+    <DeploymentEnabled Condition=" '$(Configuration)' != 'Release' ">False</DeploymentEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(BuildDocumentationEnabled)' == '' ">
+    <BuildDocumentationEnabled Condition=" '$(Configuration)' == 'Release' AND Exists('$(SandcastleInstallDir)') ">True</BuildDocumentationEnabled>
+    <BuildDocumentationEnabled Condition=" '$(Configuration)' != 'Release' OR !Exists('$(SandcastleInstallDir)') ">False</BuildDocumentationEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(StaticAnalysisEnabled)' == '' ">
+    <StaticAnalysisEnabled Condition=" '$(Configuration)' == 'Release' ">True</StaticAnalysisEnabled>
+    <!-- Inherit from project when not in Release mode -->
+    <StaticAnalysisEnabled Condition=" '$(Configuration)' != 'Release' "></StaticAnalysisEnabled>
+  </PropertyGroup>
+
+  <!--
+  NuGet Package Properties
+  -->
+  <PropertyGroup>
+    <!--
+    Enables NuGet package output for the project importing this file.
+    Note: This property is used by NuGet.targets, which is added automatically by enabling NuGet Package Restore on the solution 
+          in VS 2013, although for VS 2015 and later, it's included with WhiteTie as WhiteTie.NuGet.VS.targets.
+    -->
+    <BuildPackage Condition=" '$(BuildPackage)' == '' AND '$(DeploymentEnabled)' != '' ">$(DeploymentEnabled)</BuildPackage>
+
+    <DownloadNuGetExe Condition=" '$(DownloadNuGetExe)' == '' AND '$(VisualStudioVersion)' &gt;= 14.0 ">True</DownloadNuGetExe>
+
+    <!--
+    Indicates whether referenced projects are included.
+    This feature adds dependencies to the package for all referenced projects that use White Tie to build a NuGet package.
+    For referenced projects that do not use White Tie or do not build a NuGet package, their output is included instead.
+    -->
+    <PackageReferencedProjects Condition=" '$(PackageReferencedProjects)' == '' ">True</PackageReferencedProjects>
+
+    <!--
+    Indicates whether the NuGet package will include .pdb files, when available, for assemblies in the 'lib' folders.
+    -->
+    <PackageSymbols Condition=" '$(PackageSymbols)' == '' AND '$(Configuration)' != 'Debug' ">False</PackageSymbols>
+    <PackageSymbols Condition=" '$(PackageSymbols)' == '' AND '$(Configuration)' == 'Debug' ">True</PackageSymbols>
+
+    <!--
+    Indicates whether the NuGet package will include .xml documentation files, when available, for assemblies in the 'lib' folders.
+    -->
+    <PackageXmlDocumentation Condition=" '$(PackageXmlDocumentation)' == '' ">True</PackageXmlDocumentation>
+
+    <!--
+    Indicates whether the NuGet package will include .chm documentation files, when available, for assemblies in the 'lib' folders.
+    -->
+    <PackageCompiledDocumentation Condition=" '$(PackageCompiledDocumentation)' == '' ">True</PackageCompiledDocumentation>
+
+    <!--
+    Indicates whether the NuGet package will include Content items.
+    -->
+    <PackageContent Condition=" '$(PackageContent)' == '' ">False</PackageContent>
+  </PropertyGroup>
+
+  <!--
+  NuSpec File Properties
+  -->
+  <PropertyGroup>
+    <NuSpecId Condition=" '$(NuSpecId)' == '' ">$id$</NuSpecId>
+    <NuSpecVersion Condition=" '$(NuSpecVersion)' == '' ">$version$</NuSpecVersion>
+    <NuSpecTitle Condition=" '$(NuSpecTitle)' == '' ">$title$</NuSpecTitle>
+    <NuSpecAuthors Condition=" '$(NuSpecAuthors)' == '' ">$author$</NuSpecAuthors>
+    <NuSpecOwners Condition=" '$(NuSpecOwners)' == '' ">$author$</NuSpecOwners>
+    <NuSpecDescription Condition=" '$(NuSpecDescription)' == '' ">$description$</NuSpecDescription>
+    <NuSpecReleaseNotes Condition=" '$(NuSpecReleaseNotes)' == '' "></NuSpecReleaseNotes>
+    <NuSpecSummary Condition=" '$(NuSpecSummary)' == '' ">$product$</NuSpecSummary>
+    <NuSpecLanguage Condition=" '$(NuSpecLanguage)' == '' ">en-us</NuSpecLanguage>
+    <NuSpecProjectUrl Condition=" '$(NuSpecProjectUrl)' == '' "></NuSpecProjectUrl>
+    <NuSpecIconUrl Condition=" '$(NuSpecIconUrl)' == '' "></NuSpecIconUrl>
+    <NuSpecLicenseUrl Condition=" '$(NuSpecLicenseUrl)' == '' "></NuSpecLicenseUrl>
+    <NuSpecCopyright Condition=" '$(NuSpecCopyright)' == '' ">$copyright$</NuSpecCopyright>
+    <NuSpecRequireLicenseAcceptance Condition=" '$(NuSpecRequireLicenseAcceptance)' == '' ">false</NuSpecRequireLicenseAcceptance>
+    <NuSpecTags Condition=" '$(NuSpecTags)' == '' "></NuSpecTags>
+    <NuSpecDevelopmentDependency Condition=" '$(NuSpecDevelopmentDependency)' == '' ">false</NuSpecDevelopmentDependency>
+  </PropertyGroup>
+
+  <!--
+  Documentation Properties
+  -->
+  <PropertyGroup>
+    <!-- The following properties are retrieved from assembly attributes, by default. -->
+    <DocumentationProjectName Condition=" '$(DocumentationProjectName)' == '' "></DocumentationProjectName>
+    <DocumentationProductName Condition=" '$(DocumentationProductName)' == '' "></DocumentationProductName>
+    <DocumentationCompanyName Condition=" '$(DocumentationCompanyName)' == '' "></DocumentationCompanyName>
+    <DocumentationCopyright Condition=" '$(DocumentationCopyright)' == '' "></DocumentationCopyright>
+    <DocumentationVersion Condition=" '$(DocumentationVersion)' == '' "></DocumentationVersion>
+    <DocumentationFeedbackLinkText Condition=" '$(DocumentationFeedbackLinkText)' == '' "></DocumentationFeedbackLinkText>
+
+    <DocumentationProjectSummary Condition=" '$(DocumentationProjectSummary)' == '' "></DocumentationProjectSummary>
+    <DocumentationRootTopicEnabled Condition=" '$(DocumentationRootTopicEnabled)' == '' ">True</DocumentationRootTopicEnabled>
+    <DocumentationRootTopicTitle Condition=" '$(DocumentationRootTopicTitle)' == '' ">Namespaces</DocumentationRootTopicTitle>
+
+    <DocumentationFeedbackEmail Condition=" '$(DocumentationFeedbackEmail)' == '' "></DocumentationFeedbackEmail>
+    <DocumentationHeader Condition=" '$(DocumentationHeader)' == '' "></DocumentationHeader>
+    <DocumentationFooter Condition=" '$(DocumentationFooter)' == '' ">Updated on $([System.DateTime]::Today.ToString('D'))</DocumentationFooter>
+    <DocumentationStyle Condition=" '$(DocumentationStyle)' == '' ">VS2013</DocumentationStyle>
+    <DocumentationLanguage Condition=" '$(DocumentationLanguage)' == '' ">en-US</DocumentationLanguage>
+  </PropertyGroup>
+
+  <!--
+  XML Namespaces
+  -->
+  <PropertyGroup>
+    <MSBuildNamespace Condition=" '$(MSBuildNamespace)' == '' ">http://schemas.microsoft.com/developer/msbuild/2003</MSBuildNamespace>
+    <NuSpecNamespace Condition=" '$(NuSpecNamespace)' == '' ">http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd</NuSpecNamespace>
+  </PropertyGroup>
+
+  <!--
+  Item Groups
+  -->
+  <ItemDefinitionGroup>
+
+    <Deploy>
+      <DeployTarget />
+      <InProject>False</InProject>
+    </Deploy>
+
+    <NuGetPackage>
+      <PackageTarget />
+      <Exclude />
+      <InProject>False</InProject>
+    </NuGetPackage>
+
+    <NuGetDependency>
+      <Version />
+      <InProject>False</InProject>
+    </NuGetDependency>
+
+    <NuGetFlavor>
+      <InProject>False</InProject>
+    </NuGetFlavor>
+
+    <DocumentationSource>
+      <InProject>False</InProject>
+    </DocumentationSource>
+
+    <DocumentationReference>
+      <InProject>False</InProject>
+    </DocumentationReference>
+
+    <DocumentationFrameworkReference>
+      <InProject>False</InProject>
+    </DocumentationFrameworkReference>
+
+    <DocumentationContent>
+      <ExcludeFromToc>False</ExcludeFromToc>
+      <InProject>False</InProject>
+    </DocumentationContent>
+
+    <DocumentationImage>
+      <ImageId></ImageId>
+      <AlternateText></AlternateText>
+      <InProject>False</InProject>
+    </DocumentationImage>
+
+    <DocumentationNamespace>
+      <Summary></Summary>
+      <InProject>False</InProject>
+    </DocumentationNamespace>
+
+    <SandcastleColorizer>
+      <SyntaxFile>{@SHFBFolder}PresentationStyles\Colorizer\highlight.xml</SyntaxFile>
+      <StyleFile>{@SHFBFolder}PresentationStyles\Colorizer\highlight.xsl</StyleFile>
+      <Stylesheet>{@SHFBFolder}PresentationStyles\Colorizer\highlight.css</Stylesheet>
+      <ScriptFile>{@SHFBFolder}PresentationStyles\Colorizer\highlight.js</ScriptFile>
+      <TabSize>0</TabSize>
+      <NumberLines>False</NumberLines>
+      <Outlining>False</Outlining>
+      <KeepSeeTags>False</KeepSeeTags>
+      <DefaultTitle>True</DefaultTitle>
+      <InProject>False</InProject>
+    </SandcastleColorizer>
+
+    <SandcastleComponent>
+      <Enabled>True</Enabled>
+      <Config></Config>
+      <InProject>False</InProject>
+    </SandcastleComponent>
+
+  </ItemDefinitionGroup>
+
+  <!--
+  Default items
+  -->
+  <ItemGroup>
+    <SandcastleColorizer Include="cs" />
+    <SandcastleColorizer Include="vb" />
+  </ItemGroup>
+
+
+  <Target Name="_Dummy" />
+
+</Project>

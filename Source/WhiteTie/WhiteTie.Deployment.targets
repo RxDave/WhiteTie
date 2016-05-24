@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+Copyright © 2013 Dave Sexton
+
+See ReadMe.txt for details.
+
+Dependencies:
+	WhiteTie.props
+	WhiteTie.targets
+
+-->
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<DeployDependsOn>
+			_GetDeployableFiles;
+			CopyFilesToProjectDeployDir;
+		</DeployDependsOn>
+	</PropertyGroup>
+	<Target Name="Deploy" AfterTargets="Build" DependsOnTargets="$(DeployDependsOn)"
+					Condition=" $(DeploymentEnabled) ">
+	</Target>
+
+	<PropertyGroup>
+		<CleanDeployDependsOn>
+			CleanProjectDeployDir;
+		</CleanDeployDependsOn>
+	</PropertyGroup>
+	<Target Name="CleanDeploy" AfterTargets="Clean" DependsOnTargets="$(CleanDeployDependsOn)"
+					Condition=" '$(DeploymentEnabled)' == True ">
+	</Target>
+
+	<Target Name="_GetDeployableFiles" DependsOnTargets="ContractProjectOutputGroup">
+
+		<ItemGroup>
+			<_DeployableFiles Include="@(Deploy)" />
+
+			<_DeployableFiles Include="@(Content)">
+				<DeployTarget Condition=" '%(Content.DeployTarget)' == '' AND '%(Content.RelativeDir)' != '' ">%(Content.RelativeDir)%(Content.Filename)%(Content.Extension)</DeployTarget>
+			</_DeployableFiles>
+
+			<_DeployableFiles Include="$(TargetDir)*.exe" Exclude="$(TargetDir)*.vshost.exe" />
+			<_DeployableFiles Include="$(TargetDir)*.dll" />
+			<_DeployableFiles Include="$(TargetDir)*.pdb" />
+			<_DeployableFiles Include="$(TargetDir)*.config" />
+			<_DeployableFiles Include="$(TargetDir)*.vsix" />
+			<_DeployableFiles Include="$(TargetDir)*.msi" />
+			<_DeployableFiles Include="$(TargetDir)*.chm" />
+
+			<_DeployableFiles Include="@(ContractProjectOutputGroupOutput)">
+				<DeployTarget>%(ContractProjectOutputGroupOutput.Filename)%(ContractProjectOutputGroupOutput.Extension)</DeployTarget>
+			</_DeployableFiles>
+
+			<!-- Workaround: http://social.msdn.microsoft.com/Forums/en-US/msbuild/thread/8a2f4af8-7a57-454f-aa7d-684f3f89acf3 -->
+			<_DeployableFiles Condition=" !Exists('$(DocumentationFile)') AND '$(BuildingInsideVisualStudio)' == True " Include="$(TargetDir)*.tmp">
+				<DeployTarget>$(TargetName).xml</DeployTarget>
+			</_DeployableFiles>
+			<_DeployableFiles Condition=" Exists('$(DocumentationFile)') " Include="$(DocumentationFile)">
+				<DeployTarget>$(TargetName).xml</DeployTarget>
+			</_DeployableFiles>
+
+			<_DeployableFiles>
+				<DeployTarget Condition=" '%(_DeployableFiles.DeployTarget)' == '' ">%(Filename)%(Extension)</DeployTarget>
+			</_DeployableFiles>
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="CopyFilesToProjectDeployDir" Inputs="@(_DeployableFiles)" Outputs="@(_DeployableFiles->'$(ProjectDeployDir)%(DeployTarget)')">
+
+		<Copy Condition=" '%(_DeployableFiles.DeployTarget)' != '' "
+					SourceFiles="@(_DeployableFiles)" DestinationFiles="@(_DeployableFiles->'$(ProjectDeployDir)%(DeployTarget)')" />
+
+		<Copy Condition=" '%(_DeployableFiles.DeployTarget)' == '' "
+					SourceFiles="@(_DeployableFiles)" DestinationFolder="$(ProjectDeployDir)" />
+
+	</Target>
+
+	<Target Name="CleanProjectDeployDir">
+
+		<RemoveDir Directories="$(ProjectDeployDirBase)" />
+
+	</Target>
+
+</Project>
