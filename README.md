@@ -1,4 +1,7 @@
 # WhiteTie
+Visit the [wiki](../../wiki) for details.
+
+## Features
 * No configuration necessary. [(*)](#configuration-note)
 * By default, White Tie only executes when building in **Release** mode.
 * Builds a NuGet package for your project. (Note that in *Visual Studio 2013*, [NuGet Package Restore](http://docs.nuget.org/docs/reference/package-restore) must be enabled on your solution.)
