@@ -66,7 +66,12 @@ own targets; last target definition wins in MSBuild.)
 	-->
 	<Target Name="NuGetFlavorRecursiveReferences" />
 
-	<!--
+  <!--
+	The following target is defined in WhiteTie.NuGet.targets
+	-->
+  <Target Name="NuGetPreparePackageAttributes" />
+
+  <!--
 	The following target is not defined by Microsoft, and since White Tie only needs it when 
 	evaluating referenced projects, it's only defined here.
 	-->

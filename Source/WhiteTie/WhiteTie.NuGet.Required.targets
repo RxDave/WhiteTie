@@ -16,7 +16,7 @@ Dependencies:
     <WhiteTieNuGetRequiredImported>True</WhiteTieNuGetRequiredImported>
   </PropertyGroup>
 
-  <Target Name="NuGetPackageProjectOutputGroup" DependsOnTargets="Build;BuildPackage" Condition=" '$(_WhiteTieNuGetExe)' != '' "
+  <Target Name="NuGetPackageProjectOutputGroup" DependsOnTargets="NuGetPreparePackageAttributes" Condition=" '$(_WhiteTieNuGetExe)' != '' "
           Returns="@(NuGetPackageProjectOutputGroupOutput)">
 
     <ItemGroup Condition=" '$(PackageOutputDir)' != '' AND '$(NuGetTargetLibFrameworkFolderName)' != '' AND '$(_NuSpecId)' != '' AND '$(_NuSpecVersion)' != '' ">

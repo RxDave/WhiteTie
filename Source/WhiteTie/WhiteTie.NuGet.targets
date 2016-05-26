@@ -5,1320 +5,1338 @@ Copyright © 2013-2016 Dave Sexton
 See ReadMe.txt for details.
 
 Dependencies:
-	WhiteTie.props
-	WhiteTie.targets
-	NuGet.targets
+  WhiteTie.props
+  WhiteTie.targets
+  NuGet.targets
 
 -->
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<PropertyGroup>
-		<!-- DO NOT RENAME!  This property is also used by WhiteTie.NuGet.Required.targets -->
-		<_WhiteTieNuGetExe>$(NuGetDir)NuGet.exe</_WhiteTieNuGetExe>
-	</PropertyGroup>
+  <PropertyGroup>
+    <!-- DO NOT RENAME!  This property is also used by WhiteTie.NuGet.Required.targets -->
+    <_WhiteTieNuGetExe>$(NuGetDir)NuGet.exe</_WhiteTieNuGetExe>
+  </PropertyGroup>
 
-	<UsingTask TaskName="ResolveNuGetTargetLibFolderName" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
-		<ParameterGroup>
-			<TargetFrameworkVersion Required="False" />
-			<TargetFrameworkIdentifier Required="False" />
-			<TargetFrameworkProfile Required="False" />
-			<!-- OR -->
-			<TargetFrameworks Required="False" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+  <UsingTask TaskName="ResolveNuGetTargetLibFolderName" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <TargetFrameworkVersion Required="False" />
+      <TargetFrameworkIdentifier Required="False" />
+      <TargetFrameworkProfile Required="False" />
+      <!-- OR -->
+      <TargetFrameworks Required="False" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
 
-			<LibFolderNames Output="True" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
-		</ParameterGroup>
-		<Task>
-			<Using Namespace="System"/>
-			<Using Namespace="System.Linq"/>
-			<Using Namespace="System.Collections.Generic"/>
-			<Code Type="Fragment" Language="cs">
-				<![CDATA[
-				/* See "Build\Tools\NuGet\Import Profiles.html" for details about the origin of the following portable library profile configurations.
-				 * 
-				 * NOTE: XBOX targets have been removed.
-				 * 
-				 * https://docs.nuget.org/create/targetframeworks
-				 */
-				var profiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-				{
-					{ "Profile2", "portable-net4+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
-					{ "Profile3", "portable-net4+sl4" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4)
-					{ "Profile4", "portable-net45+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
-					{ "Profile5", "portable-net4+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8)
-					{ "Profile6", "portable-net403+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8)
-					{ "Profile7", "portable-net45+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8)
-					{ "Profile14", "portable-net4+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5)
-					{ "Profile18", "portable-net403+sl4" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4)
-					{ "Profile19", "portable-net403+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5)
-					{ "Profile23", "portable-net45+sl4" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4)
-					{ "Profile24", "portable-net45+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5)
-					{ "Profile31", "portable-netcore451+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)
-					{ "Profile32", "portable-netcore451+wpa81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1)
-					{ "Profile36", "portable-net4+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile37", "portable-net4+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8)
-					{ "Profile41", "portable-net403+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8)
-					{ "Profile42", "portable-net403+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8)
-					{ "Profile44", "portable-net451+netcore451" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1)
-					{ "Profile46", "portable-net45+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8)
-					{ "Profile47", "portable-net45+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8)
-					{ "Profile49", "portable-net45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8)
-					{ "Profile78", "portable-net45+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile84", "portable-wpa81+wp81" },  // .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1)
-					{ "Profile88", "portable-net4+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
-					{ "Profile92", "portable-net4+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8, Windows Phone 8.1)
-					{ "Profile95", "portable-net403+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
-					{ "Profile96", "portable-net403+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
-					{ "Profile102", "portable-net403+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8, Windows Phone 8.1)
-					{ "Profile104", "portable-net45+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
-					{ "Profile111", "portable-net45+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1)
-					{ "Profile136", "portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile143", "portable-net403+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile147", "portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile151", "portable-net451+netcore451+wpa81" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1)
-					{ "Profile154", "portable-net45+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile157", "portable-netcore451+wpa81+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1)
-					{ "Profile158", "portable-net45+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
-					{ "Profile225", "portable-net4+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1)
-					{ "Profile240", "portable-net403+sl5+netcore45+wpa81" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1)
-					{ "Profile255", "portable-net45+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1)
-					{ "Profile259", "portable-net45+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
-					{ "Profile328", "portable-net4+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
-					{ "Profile336", "portable-net403+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
-					{ "Profile344", "portable-net45+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" }  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
-				};
-				
-				if (TargetFrameworks == null || TargetFrameworks.Length == 0)
-				{
-					if (!string.IsNullOrWhiteSpace(TargetFrameworkVersion))
-					{
-						TargetFrameworks = new[]
-						{
-							new TaskItem("Output", new Dictionary<string, string>()
-							{ 
-								{ "Version", TargetFrameworkVersion }, 
-								{ "Identifier", TargetFrameworkIdentifier }, 
-								{ "Profile", TargetFrameworkProfile }
-							})
-						};
-					}
-					else
-					{
-						TargetFrameworks = new ITaskItem[0];
-					}
-				}
-				
-				var libFolderNames = new List<TaskItem>(TargetFrameworks.Length);
-				
-				foreach (var targetFramework in TargetFrameworks)
-				{
-					var version = targetFramework.GetMetadata("Version");
-					var identifier = targetFramework.GetMetadata("Identifier");
-					var profile = targetFramework.GetMetadata("Profile");
-					
-					string libFolderName;
-					if (!profiles.TryGetValue(profile ?? string.Empty, out libFolderName))
-					{
-						var c = StringComparison.OrdinalIgnoreCase;
-					
-						/*
-						 * Special Frameworks (non-portable)
-						 */
-						if (string.Equals(version, "v8.0", c) && string.Equals(identifier, "WindowsPhone", c))
-						{
-							libFolderName = "wp80";
-						}
-						else if (string.Equals(version, "v4.0", c) && string.Equals(identifier, "Silverlight", c) && string.Equals(profile, "WindowsPhone71", c))
-						{
-							libFolderName = "wp71";
-						}
-						else if (string.Equals(version, "v5.0", c) && string.Equals(identifier, "Silverlight", c))
-						{
-							libFolderName = "sl5";
-						}
-						else if (string.Equals(version, "v4.0", c) && string.Equals(identifier, "Silverlight", c))
-						{
-							libFolderName = "sl4";
-						}
-						else
-						{
-							/*
-							 * Full Frameworks
-							 */
-							if (string.Equals(identifier, ".NETCore", c))
-							{
-								libFolderName = "netcore45";
-							}
-							else if (version != null && version.Length > 1 && version.StartsWith("v"))
-							{
-								libFolderName = "net" + version.Substring(1).Replace(".", string.Empty);
-							}
-						}
-					}
-					
-					var item = new TaskItem(targetFramework.ItemSpec, new Dictionary<string, string>() { { "LibFrameworkFolderName", libFolderName } });
-					
-					targetFramework.CopyMetadataTo(item);
-					
-					libFolderNames.Add(item);
-				}
-				
-				LibFolderNames = libFolderNames.ToArray();
+      <LibFolderNames Output="True" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System"/>
+      <Using Namespace="System.Linq"/>
+      <Using Namespace="System.Collections.Generic"/>
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        /* See "Build\Tools\NuGet\Import Profiles.html" for details about the origin of the following portable library profile configurations.
+         * 
+         * NOTE: XBOX targets have been removed.
+         * 
+         * https://docs.nuget.org/create/targetframeworks
+         */
+        var profiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+          { "Profile2", "portable-net4+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
+          { "Profile3", "portable-net4+sl4" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4)
+          { "Profile4", "portable-net45+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
+          { "Profile5", "portable-net4+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8)
+          { "Profile6", "portable-net403+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8)
+          { "Profile7", "portable-net45+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8)
+          { "Profile14", "portable-net4+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5)
+          { "Profile18", "portable-net403+sl4" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4)
+          { "Profile19", "portable-net403+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5)
+          { "Profile23", "portable-net45+sl4" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4)
+          { "Profile24", "portable-net45+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5)
+          { "Profile31", "portable-netcore451+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)
+          { "Profile32", "portable-netcore451+wpa81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1)
+          { "Profile36", "portable-net4+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
+          { "Profile37", "portable-net4+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8)
+          { "Profile41", "portable-net403+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8)
+          { "Profile42", "portable-net403+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8)
+          { "Profile44", "portable-net451+netcore451" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1)
+          { "Profile46", "portable-net45+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8)
+          { "Profile47", "portable-net45+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8)
+          { "Profile49", "portable-net45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8)
+          { "Profile78", "portable-net45+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8)
+          { "Profile84", "portable-wpa81+wp81" },  // .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1)
+          { "Profile88", "portable-net4+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
+          { "Profile92", "portable-net4+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8, Windows Phone 8.1)
+          { "Profile95", "portable-net403+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
+          { "Profile96", "portable-net403+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
+          { "Profile102", "portable-net403+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8, Windows Phone 8.1)
+          { "Profile104", "portable-net45+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
+          { "Profile111", "portable-net45+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1)
+          { "Profile136", "portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
+          { "Profile143", "portable-net403+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
+          { "Profile147", "portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
+          { "Profile151", "portable-net451+netcore451+wpa81" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1)
+          { "Profile154", "portable-net45+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
+          { "Profile157", "portable-netcore451+wpa81+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1)
+          { "Profile158", "portable-net45+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
+          { "Profile225", "portable-net4+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1)
+          { "Profile240", "portable-net403+sl5+netcore45+wpa81" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1)
+          { "Profile255", "portable-net45+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1)
+          { "Profile259", "portable-net45+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
+          { "Profile328", "portable-net4+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
+          { "Profile336", "portable-net403+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
+          { "Profile344", "portable-net45+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" }  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
+        };
+        
+        if (TargetFrameworks == null || TargetFrameworks.Length == 0)
+        {
+          if (!string.IsNullOrWhiteSpace(TargetFrameworkVersion))
+          {
+            TargetFrameworks = new[]
+            {
+              new TaskItem("Output", new Dictionary<string, string>()
+              { 
+                { "Version", TargetFrameworkVersion }, 
+                { "Identifier", TargetFrameworkIdentifier }, 
+                { "Profile", TargetFrameworkProfile }
+              })
+            };
+          }
+          else
+          {
+            TargetFrameworks = new ITaskItem[0];
+          }
+        }
+        
+        var libFolderNames = new List<TaskItem>(TargetFrameworks.Length);
+        
+        foreach (var targetFramework in TargetFrameworks)
+        {
+          var version = targetFramework.GetMetadata("Version");
+          var identifier = targetFramework.GetMetadata("Identifier");
+          var profile = targetFramework.GetMetadata("Profile");
+          
+          string libFolderName;
+          if (!profiles.TryGetValue(profile ?? string.Empty, out libFolderName))
+          {
+            var c = StringComparison.OrdinalIgnoreCase;
+          
+            /*
+             * Special Frameworks (non-portable)
+             */
+            if (string.Equals(version, "v8.0", c) && string.Equals(identifier, "WindowsPhone", c))
+            {
+              libFolderName = "wp80";
+            }
+            else if (string.Equals(version, "v4.0", c) && string.Equals(identifier, "Silverlight", c) && string.Equals(profile, "WindowsPhone71", c))
+            {
+              libFolderName = "wp71";
+            }
+            else if (string.Equals(version, "v5.0", c) && string.Equals(identifier, "Silverlight", c))
+            {
+              libFolderName = "sl5";
+            }
+            else if (string.Equals(version, "v4.0", c) && string.Equals(identifier, "Silverlight", c))
+            {
+              libFolderName = "sl4";
+            }
+            else
+            {
+              /*
+               * Full Frameworks
+               */
+              if (string.Equals(identifier, ".NETCore", c))
+              {
+                libFolderName = "netcore45";
+              }
+              else if (version != null && version.Length > 1 && version.StartsWith("v"))
+              {
+                libFolderName = "net" + version.Substring(1).Replace(".", string.Empty);
+              }
+            }
+          }
+          
+          var item = new TaskItem(targetFramework.ItemSpec, new Dictionary<string, string>() { { "LibFrameworkFolderName", libFolderName } });
+          
+          targetFramework.CopyMetadataTo(item);
+          
+          libFolderNames.Add(item);
+        }
+        
+        LibFolderNames = libFolderNames.ToArray();
 ]]>
-			</Code>
-		</Task>
-	</UsingTask>
+      </Code>
+    </Task>
+  </UsingTask>
 
-	<Target Name="CleanPackage" AfterTargets="Clean"
-					Condition=" '$(BuildPackage)' == True ">
+  <Target Name="CleanPackage" AfterTargets="Clean"
+          Condition=" '$(BuildPackage)' == True ">
 
-		<ItemGroup>
-			<_NuGetFilesToDelete Include="$(OutDir)*.nupkg" />
-			<_NuGetFilesToDelete Include="$(OutDir)*.nuspec" />
-		</ItemGroup>
+    <ItemGroup>
+      <_NuGetFilesToDelete Include="$(OutDir)*.nupkg" />
+      <_NuGetFilesToDelete Include="$(OutDir)*.nuspec" />
+    </ItemGroup>
 
-		<Delete Files="@(_NuGetFilesToDelete)" />
+    <Delete Files="@(_NuGetFilesToDelete)" />
 
-	</Target>
+  </Target>
 
-	<PropertyGroup>
-		<_WhiteTieBuildPackageDependsOn>
-			_PrepareToBuildNuGetPackage;
-			_ResolveTokensForNuSpec;
-			_ResolveOutputsAndDependenciesForNuSpec;
-			_CreateNuSpecFile;
-		</_WhiteTieBuildPackageDependsOn>
-	</PropertyGroup>
-	<Target Name="_WhiteTieBuildPackage" AfterTargets="Build;BuildDocumentation" BeforeTargets="BuildPackage" DependsOnTargets="$(_WhiteTieBuildPackageDependsOn)"
-					Condition=" '$(BuildPackage)' == True ">
+  <PropertyGroup>
+    <_WhiteTieBuildPackageDependsOn>
+      _PrepareToBuildNuGetPackage;
+      _ResolveOutputsAndDependenciesForNuSpec;
+      _CreateNuSpecFile;
+    </_WhiteTieBuildPackageDependsOn>
+  </PropertyGroup>
+  <Target Name="_WhiteTieBuildPackage" AfterTargets="Build;BuildDocumentation" BeforeTargets="BuildPackage" DependsOnTargets="$(_WhiteTieBuildPackageDependsOn)"
+          Condition=" '$(BuildPackage)' == True ">
 
-		<!-- The BuildPackage target is defined in the NuGet.targets file, which is imported by Visual Studio when NuGet Package Restore is enabled for the solution. -->
+    <!-- The BuildPackage target is defined in the NuGet.targets file, which is imported by Visual Studio when NuGet Package Restore is enabled for the solution. -->
 
-	</Target>
+  </Target>
 
-	<Target Name="_PrepareToBuildNuGetPackage" DependsOnTargets="_ResolveNuGetTargetLibFrameworkFolderName;BuiltProjectOutputGroupDependencies">
+  <PropertyGroup>
+    <_PrepareToBuildNuGetPackageDependsOn>
+      NuGetPreparePackageAttributes;
+      BuiltProjectOutputGroupDependencies;
+    </_PrepareToBuildNuGetPackageDependsOn>
 
-		<Error Text="The NuGet package's lib target Framework subfolder name could not be determined automatically."
-					 Condition=" '$(NuGetTargetLibFrameworkFolderName)' == '' " />
+    <!--
+    Must ensure that BuildCommand is initialized by the WhiteTie.NuGet.VS.targets file so that it can be overwritten by this target.
+    The VS-provided NuGet.targets file doesn't have this problem because it defines BuildCommand as a property outside of any target.
+    -->
+    <_PrepareToBuildNuGetPackageDependsOn Condition=" '$(WhiteTieNuGetVSTargetsImported)' == 'True' ">
+      _CreateNuGetCommands;
+      $(_PrepareToBuildNuGetPackageDependsOn)
+    </_PrepareToBuildNuGetPackageDependsOn>
+  </PropertyGroup>
+  <Target Name="_PrepareToBuildNuGetPackage" DependsOnTargets="$(_PrepareToBuildNuGetPackageDependsOn)" Condition=" '$(BuildPackage)' == True ">
 
-		<ItemGroup Condition=" '$(PackageReferencedProjects)' == True ">
+    <Error Text="The NuGet package's lib target Framework subfolder name could not be determined automatically."
+           Condition=" '$(NuGetTargetLibFrameworkFolderName)' == '' " />
 
-			<PackageableProjectReferenceWithConfiguration Include="@(ProjectReferenceWithConfiguration)">
-				<!-- Required metadata for inner-joining later -->
-				<MSBuildSourceProjectFile>%(ProjectReferenceWithConfiguration.Identity)</MSBuildSourceProjectFile>
-			</PackageableProjectReferenceWithConfiguration>
+    <ItemGroup Condition=" '$(PackageReferencedProjects)' == True ">
 
-			<NuGetFlavor>
-				<MSBuildSourceProjectFile>%(FullPath)</MSBuildSourceProjectFile>
-			</NuGetFlavor>
+      <PackageableProjectReferenceWithConfiguration Include="@(ProjectReferenceWithConfiguration)">
+        <!-- Required metadata for inner-joining later -->
+        <MSBuildSourceProjectFile>%(ProjectReferenceWithConfiguration.Identity)</MSBuildSourceProjectFile>
+      </PackageableProjectReferenceWithConfiguration>
 
-			<!-- Inner-join on MSBuildSourceProjectFile -->
-			<PackageableProjectReferenceWithConfiguration Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(NuGetFlavor)' != '' ">
-				<Invalid>True</Invalid>
-			</PackageableProjectReferenceWithConfiguration>
+      <NuGetFlavor>
+        <MSBuildSourceProjectFile>%(FullPath)</MSBuildSourceProjectFile>
+      </NuGetFlavor>
 
-			<_NuGetInvalidProjects Include="@(PackageableProjectReferenceWithConfiguration)" Condition=" '%(_NuGetAllProjects.Invalid)' == True " />
+      <!-- Inner-join on MSBuildSourceProjectFile -->
+      <PackageableProjectReferenceWithConfiguration Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(NuGetFlavor)' != '' ">
+        <Invalid>True</Invalid>
+      </PackageableProjectReferenceWithConfiguration>
 
-		</ItemGroup>
+      <_NuGetInvalidProjects Include="@(PackageableProjectReferenceWithConfiguration)" Condition=" '%(_NuGetAllProjects.Invalid)' == True " />
 
-		<Error Condition=" '@(_NuGetInvalidProjects)' != '' "
-					 Text="One or more projects are referenced as flavors and as normal project references.
+    </ItemGroup>
+
+    <Error Condition=" '@(_NuGetInvalidProjects)' != '' "
+           Text="One or more projects are referenced as flavors and as normal project references.
 Projects:
 @(_NuGetInvalidProjects, '
 ')" />
 
-		<PropertyGroup>
-			<NuSpecFile>$(IntermediateOutputPath)\$(MSBuildProjectName).nuspec</NuSpecFile>
-			<_NuSpecBasePath>$(MSBuildProjectDirectory)</_NuSpecBasePath>
+    <PropertyGroup>
+      <NuSpecFile>$(IntermediateOutputPath)\$(MSBuildProjectName).nuspec</NuSpecFile>
+      <_NuSpecBasePath>$(MSBuildProjectDirectory)</_NuSpecBasePath>
 
-			<!-- BuildCommand is used by the BuildPackage target defined in the NuGet.targets file. -->
-			<BuildCommand>$(NuGetCommand) pack "$(NuSpecFile)" -BasePath "$(_NuSpecBasePath)" -Properties Configuration=$(Configuration) $(NonInteractiveSwitch) -OutputDirectory "$(PackageOutputDir)" -symbols</BuildCommand>
-		</PropertyGroup>
+      <!-- BuildCommand is used by the BuildPackage target defined in the NuGet.targets file. -->
+      <BuildCommand>$(NuGetCommand) pack "$(NuSpecFile)" -BasePath "$(_NuSpecBasePath)" -Properties Configuration=$(Configuration) $(NonInteractiveSwitch) -OutputDirectory "$(PackageOutputDir)" -symbols</BuildCommand>
+    </PropertyGroup>
 
-		<MakeDir Condition=" !Exists('$(PackageOutputDir)') " Directories="$(PackageOutputDir)" />
+    <MakeDir Condition=" !Exists('$(PackageOutputDir)') " Directories="$(PackageOutputDir)" />
 
-	</Target>
+  </Target>
 
-	<Target Name="_ResolveNuGetTargetLibFrameworkFolderName" Returns="$(NuGetTargetLibFrameworkFolderName)">
+  <Target Name="_ResolveNuGetTargetLibFrameworkFolderName" Returns="$(NuGetTargetLibFrameworkFolderName)">
 
-		<ResolveNuGetTargetLibFolderName TargetFrameworkVersion="$(TargetFrameworkVersion)"
-																		 TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
-																		 TargetFrameworkProfile="$(TargetFrameworkProfile)">
-			<Output TaskParameter="LibFolderNames" ItemName="_NuGetTargetLibFrameworkFolderNames" />
-		</ResolveNuGetTargetLibFolderName>
+    <ResolveNuGetTargetLibFolderName TargetFrameworkVersion="$(TargetFrameworkVersion)"
+                                     TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+                                     TargetFrameworkProfile="$(TargetFrameworkProfile)">
+      <Output TaskParameter="LibFolderNames" ItemName="_NuGetTargetLibFrameworkFolderNames" />
+    </ResolveNuGetTargetLibFolderName>
 
-		<PropertyGroup>
-			<NuGetTargetLibFrameworkFolderName>%(_NuGetTargetLibFrameworkFolderNames.LibFrameworkFolderName)</NuGetTargetLibFrameworkFolderName>
-		</PropertyGroup>
+    <PropertyGroup>
+      <NuGetTargetLibFrameworkFolderName>%(_NuGetTargetLibFrameworkFolderNames.LibFrameworkFolderName)</NuGetTargetLibFrameworkFolderName>
+    </PropertyGroup>
 
-	</Target>
+  </Target>
 
-	<Target Name="_ResolveTokensForNuSpec" DependsOnTargets="GetCommonAssemblyAttributes;GetPreRelease">
+  <Target Name="_ResolveTokensForNuSpec" DependsOnTargets="GetCommonAssemblyAttributes;GetPreRelease">
 
-		<PropertyGroup Condition=" '$(TargetAssemblyInformationalVersion)' != '' ">
-			<_NuSpecPackageVersion Condition=" '$(TargetAssemblyInformationalVersionIsSemantic)' == True OR '$(PreRelease)' == '' ">$(TargetAssemblyInformationalVersion)</_NuSpecPackageVersion>
-			<_NuSpecPackageVersion Condition=" '$(TargetAssemblyInformationalVersionIsSemantic)' != True AND '$(PreRelease)' != '' ">$(TargetAssemblyInformationalVersion)-$(PreRelease)</_NuSpecPackageVersion>
-		</PropertyGroup>
+    <PropertyGroup Condition=" '$(TargetAssemblyInformationalVersion)' != '' ">
+      <_NuSpecPackageVersion Condition=" '$(TargetAssemblyInformationalVersionIsSemantic)' == True OR '$(PreRelease)' == '' ">$(TargetAssemblyInformationalVersion)</_NuSpecPackageVersion>
+      <_NuSpecPackageVersion Condition=" '$(TargetAssemblyInformationalVersionIsSemantic)' != True AND '$(PreRelease)' != '' ">$(TargetAssemblyInformationalVersion)-$(PreRelease)</_NuSpecPackageVersion>
+    </PropertyGroup>
 
-		<PropertyGroup>
-			<_NuSpecPackageVersion Condition=" '$(_NuSpecPackageVersion)' == '' AND '$(PreRelease)' == '' ">$(TargetAssemblyVersion)</_NuSpecPackageVersion>
-			<_NuSpecPackageVersion Condition=" '$(_NuSpecPackageVersion)' == '' AND '$(PreRelease)' != '' ">$(TargetAssemblyVersion)-$(PreRelease)</_NuSpecPackageVersion>
+    <PropertyGroup>
+      <_NuSpecPackageVersion Condition=" '$(_NuSpecPackageVersion)' == '' AND '$(PreRelease)' == '' ">$(TargetAssemblyVersion)</_NuSpecPackageVersion>
+      <_NuSpecPackageVersion Condition=" '$(_NuSpecPackageVersion)' == '' AND '$(PreRelease)' != '' ">$(TargetAssemblyVersion)-$(PreRelease)</_NuSpecPackageVersion>
 
-			<_NuSpecPackageTitle>$(TargetAssemblyTitle)</_NuSpecPackageTitle>
-			<_NuSpecPackageTitle Condition=" '$(_NuSpecPackageTitle)' == '' ">$(TargetName)</_NuSpecPackageTitle>
+      <_NuSpecPackageTitle>$(TargetAssemblyTitle)</_NuSpecPackageTitle>
+      <_NuSpecPackageTitle Condition=" '$(_NuSpecPackageTitle)' == '' ">$(TargetName)</_NuSpecPackageTitle>
 
-			<!-- DO NOT RENAME!  The following three properties are also used by the NuGetFlavorReferences target and targets in WhiteTie.NuGet.Required.targets -->
-			<_NuSpecId>$(NuSpecId.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecId>
-			<_NuSpecVersion>$(NuSpecVersion.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecVersion>
+      <!-- DO NOT RENAME!  The following three properties are also used by the NuGetFlavorReferences target and targets in WhiteTie.NuGet.Required.targets -->
+      <_NuSpecId>$(NuSpecId.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecId>
+      <_NuSpecVersion>$(NuSpecVersion.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecVersion>
 
-			<_NuSpecDevelopmentDependency Condition=" '$(NuSpecDevelopmentDependency)' == True ">true</_NuSpecDevelopmentDependency>
-			<_NuSpecDevelopmentDependency Condition=" '$(NuSpecDevelopmentDependency)' != True ">false</_NuSpecDevelopmentDependency>
+      <_NuSpecDevelopmentDependency Condition=" '$(NuSpecDevelopmentDependency)' == True ">true</_NuSpecDevelopmentDependency>
+      <_NuSpecDevelopmentDependency Condition=" '$(NuSpecDevelopmentDependency)' != True ">false</_NuSpecDevelopmentDependency>
 
-			<_NuSpecTitle>$(NuSpecTitle.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecTitle>
-			<_NuSpecAuthors>$(NuSpecAuthors.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecAuthors>
-			<_NuSpecOwners>$(NuSpecOwners.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecOwners>
-			<_NuSpecDescription>$(NuSpecDescription.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecDescription>
-			<_NuSpecReleaseNotes>$(NuSpecReleaseNotes.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecReleaseNotes>
-			<_NuSpecSummary>$(NuSpecSummary.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecSummary>
-			<_NuSpecCopyright>$(NuSpecCopyright.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecCopyright>
+      <_NuSpecTitle>$(NuSpecTitle.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecTitle>
+      <_NuSpecAuthors>$(NuSpecAuthors.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecAuthors>
+      <_NuSpecOwners>$(NuSpecOwners.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecOwners>
+      <_NuSpecDescription>$(NuSpecDescription.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecDescription>
+      <_NuSpecReleaseNotes>$(NuSpecReleaseNotes.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecReleaseNotes>
+      <_NuSpecSummary>$(NuSpecSummary.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecSummary>
+      <_NuSpecCopyright>$(NuSpecCopyright.Replace('$id$', '$(TargetName)').Replace('$version$', '$(_NuSpecPackageVersion)').Replace('$title$', '$(_NuSpecPackageTitle)').Replace('$author$', '$(TargetAssemblyCompany)').Replace('$description$', '$(TargetAssemblyDescription)').Replace('$copyright$', '$(TargetAssemblyCopyright)').Replace('$product$', '$(TargetAssemblyProduct)'))</_NuSpecCopyright>
 
-			<!-- Booleans -->
-			<_NuSpecRequireLicenseAcceptance Condition=" '$(NuSpecRequireLicenseAcceptance)' == True ">true</_NuSpecRequireLicenseAcceptance>
-			<_NuSpecRequireLicenseAcceptance Condition=" '$(NuSpecRequireLicenseAcceptance)' != True ">false</_NuSpecRequireLicenseAcceptance>
-		</PropertyGroup>
+      <!-- Booleans -->
+      <_NuSpecRequireLicenseAcceptance Condition=" '$(NuSpecRequireLicenseAcceptance)' == True ">true</_NuSpecRequireLicenseAcceptance>
+      <_NuSpecRequireLicenseAcceptance Condition=" '$(NuSpecRequireLicenseAcceptance)' != True ">false</_NuSpecRequireLicenseAcceptance>
+    </PropertyGroup>
 
-	</Target>
+  </Target>
 
-	<PropertyGroup>
-		<_ResolveOutputsAndDependenciesForNuSpecDependsOn>
-			_ResolveFlavorConfiguration;
-			_ResolvePrimaryOutputsForNuSpec;
-			_ResolveFlavorOutputsForNuSpec;
-			_ResolvePrimaryDependenciesForNuSpec;
-			_ResolveFlavorDependenciesForNuSpec;
-			_ResolveReferenceOutputsForNuSpec;
-			_ResolveFlavorReferenceOutputsForNuSpec;
-			_ResolveReferenceDependenciesForNuSpec;
-			_ResolveFlavorReferenceDependenciesForNuSpec;
-		</_ResolveOutputsAndDependenciesForNuSpecDependsOn>
-	</PropertyGroup>
-	<Target Name="_ResolveOutputsAndDependenciesForNuSpec" DependsOnTargets="$(_ResolveOutputsAndDependenciesForNuSpecDependsOn)">
-	</Target>
+  <PropertyGroup>
+    <_ResolveOutputsAndDependenciesForNuSpecDependsOn>
+      _ResolveFlavorConfiguration;
+      _ResolvePrimaryOutputsForNuSpec;
+      _ResolveFlavorOutputsForNuSpec;
+      _ResolvePrimaryDependenciesForNuSpec;
+      _ResolveFlavorDependenciesForNuSpec;
+      _ResolveReferenceOutputsForNuSpec;
+      _ResolveFlavorReferenceOutputsForNuSpec;
+      _ResolveReferenceDependenciesForNuSpec;
+      _ResolveFlavorReferenceDependenciesForNuSpec;
+    </_ResolveOutputsAndDependenciesForNuSpecDependsOn>
+  </PropertyGroup>
+  <Target Name="_ResolveOutputsAndDependenciesForNuSpec" DependsOnTargets="$(_ResolveOutputsAndDependenciesForNuSpecDependsOn)">
+  </Target>
 
-	<Target Name="_ResolveFlavorConfiguration" Condition=" '@(NuGetFlavor)' != '' " Returns="@(NuGetFlavorWithConfiguration)">
+  <Target Name="_ResolveFlavorConfiguration" Condition=" '@(NuGetFlavor)' != '' " Returns="@(NuGetFlavorWithConfiguration)">
 
-		<BetterXmlPeek XmlInputPath="%(NuGetFlavor.Identity)" Query="//ms:ProjectGuid" Namespaces="&lt;Namespace Prefix='ms' Uri='$(MSBuildNamespace)'/&gt;"
-									 Condition=" '%(NuGetFlavor.Project)' == '' ">
-			<Output TaskParameter="Result" ItemName="_NuGetFlavorProjectGuids" />
-		</BetterXmlPeek>
+    <BetterXmlPeek XmlInputPath="%(NuGetFlavor.Identity)" Query="//ms:ProjectGuid" Namespaces="&lt;Namespace Prefix='ms' Uri='$(MSBuildNamespace)'/&gt;"
+                   Condition=" '%(NuGetFlavor.Project)' == '' ">
+      <Output TaskParameter="Result" ItemName="_NuGetFlavorProjectGuids" />
+    </BetterXmlPeek>
 
-		<ItemGroup>
-			<_NuGetFlavorByGuid Include="%(_NuGetFlavorProjectGuids.XmlInputPath)">
-				<Guid>%(_NuGetFlavorProjectGuids.Text)</Guid>
-			</_NuGetFlavorByGuid>
+    <ItemGroup>
+      <_NuGetFlavorByGuid Include="%(_NuGetFlavorProjectGuids.XmlInputPath)">
+        <Guid>%(_NuGetFlavorProjectGuids.Text)</Guid>
+      </_NuGetFlavorByGuid>
 
-			<NuGetFlavor Condition=" '%(Identity)' != '' AND @(NuGetFlavor->'%(Project)') == '' ">
-				<!-- This metadata is required by the AssignProjectConfiguration task. -->
-				<Project>@(_NuGetFlavorByGuid->'%(Guid)')</Project>
-			</NuGetFlavor>
+      <NuGetFlavor Condition=" '%(Identity)' != '' AND @(NuGetFlavor->'%(Project)') == '' ">
+        <!-- This metadata is required by the AssignProjectConfiguration task. -->
+        <Project>@(_NuGetFlavorByGuid->'%(Guid)')</Project>
+      </NuGetFlavor>
 
-			<_NuGetFlavorUnresolvedGuid Include="@(NuGetFlavor)" Condition=" '%(NuGetFlavor.Project)' == '' " />
-		</ItemGroup>
+      <_NuGetFlavorUnresolvedGuid Include="@(NuGetFlavor)" Condition=" '%(NuGetFlavor.Project)' == '' " />
+    </ItemGroup>
 
-		<Error Condition=" '@(_NuGetFlavorUnresolvedGuid)' != '' "
-					 Text="Project GUIDs could not be determined for the following NuGet Flavor project references.  You can specify the GUID in the &lt;Project&gt; metadata yourself to avoid this error.
+    <Error Condition=" '@(_NuGetFlavorUnresolvedGuid)' != '' "
+           Text="Project GUIDs could not be determined for the following NuGet Flavor project references.  You can specify the GUID in the &lt;Project&gt; metadata yourself to avoid this error.
 Projects: 
 @(_NuGetFlavorUnresolvedGuid, '
 ')" />
 
-		<AssignProjectConfiguration ProjectReferences="@(NuGetFlavor)" CurrentProject="$(MSBuildProjectFullPath)"
-																CurrentProjectConfiguration="$(Configuration)" CurrentProjectPlatform="$(Platform)"
-																DefaultToVcxPlatformMapping="$(DefaultToVcxPlatformMapping)" VcxToDefaultPlatformMapping="$(VcxToDefaultPlatformMapping)"
-																OutputType="$(OutputType)" ResolveConfigurationPlatformUsingMappings="false"
-																SolutionConfigurationContents="$(CurrentSolutionConfigurationContents)"
-																AddSyntheticProjectReferencesForSolutionDependencies="$(AddSyntheticProjectReferencesForSolutionDependencies)"
-																OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration="$(OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration)"
-																ShouldUnsetParentConfigurationAndPlatform="$(ShouldUnsetParentConfigurationAndPlatform)">
-			<Output TaskParameter="AssignedProjects" ItemName="NuGetFlavorWithConfiguration" />
-			<Output TaskParameter="UnassignedProjects" ItemName="NuGetFlavorWithConfiguration" />
-		</AssignProjectConfiguration>
-
-		<ItemGroup>
-			<!-- Add required metadata for inner-joins with other item lists; e.g., build output groups -->
-			<NuGetFlavorWithConfiguration>
-				<MSBuildSourceProjectFile>%(FullPath)</MSBuildSourceProjectFile>
-				<IsFlavor>True</IsFlavor>
-			</NuGetFlavorWithConfiguration>
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All primary project's output (.dll, .xml, .pdb, .Contracts.dll, .chm) -->
-	<PropertyGroup>
-		<!--
-		Most of the following targets are defined in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; retrieved on 6/22/2014)
-		-->
-		<_ResolvePrimaryOutputsForNuSpecDependsOn>
-			BuiltProjectOutputGroup;
-			DocumentationProjectOutputGroup;
-			DebugSymbolsProjectOutputGroup;
-			SatelliteDllsProjectOutputGroup;
-			SGenFilesOutputGroup;
-			ContractProjectOutputGroup;
-			CompiledDocumentationProjectOutputGroup;
-		</_ResolvePrimaryOutputsForNuSpecDependsOn>
-	</PropertyGroup>
-	<Target Name="_ResolvePrimaryOutputsForNuSpec" DependsOnTargets="$(_ResolvePrimaryOutputsForNuSpecDependsOn)"
-					Returns="@(PackageableProjectOutput)">
-
-		<ItemGroup>
-			<!-- FinalOutputPath is typically the bin folder, rather than the obj folder that Identity typically references. -->
-			<_PackageableProjectOutputFinalOutputPath Include="@(BuiltProjectOutputGroupOutput)"
-																								Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' != '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True ">
-				<!-- Sometimes it's rooted and sometimes it's relative to the project; e.g., FinalOutputPath for XML doc files seems to always be relative. -->
-				<FinalOutputPath>$([System.IO.Path]::GetFullPath('%(FinalOutputPath)'))</FinalOutputPath>
-			</_PackageableProjectOutputFinalOutputPath>
-
-			<PackageableProjectOutput Include="@(_PackageableProjectOutputFinalOutputPath->'%(FinalOutputPath)')" KeepMetadata="Identity" />
-			<PackageableProjectOutput Include="@(BuiltProjectOutputGroupOutput)" KeepMetadata="Identity"
-																Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' == '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True " />
-
-			<PackageableProjectOutput Include="@(DocumentationProjectOutputGroupOutput->'%(FullPath)')" KeepMetadata="Identity"
-																Condition=" '$(PackageXmlDocumentation)' == True AND '%(DocumentationProjectOutputGroupOutput.IsKeyOutput)' == True " />
-
-			<PackageableProjectOutput Include="@(DebugSymbolsProjectOutputGroupOutput)" KeepMetadata="Identity"
-																Condition=" '$(PackageSymbols)' == True " />
-
-			<!-- TODO: See related comment about satellites in _CreateNuSpecFile
-			<PackageableProjectOutput Include="@(SatelliteDllsProjectOutputGroupOutput)" KeepMetadata="Identity" />
-			-->
-
-			<PackageableProjectOutput Include="@(SGenFilesOutputGroupOutput)" KeepMetadata="Identity">
-				<IsSerializationAssembly>True</IsSerializationAssembly>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="@(ContractProjectOutputGroupOutput)">
-				<IsContractOutput>True</IsContractOutput>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="$([System.IO.Path]::GetFullPath('$(CompiledDocumentationFile)'))"
-																Condition=" '$(PackageCompiledDocumentation)' == True AND '$(CompiledDocumentationFile)' != '' AND Exists('$(CompiledDocumentationFile)') " />
-
-			<PackageableProjectOutput>
-				<PackageTarget>lib</PackageTarget>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="@(Content)" Condition=" '$(PackageContent)' == True AND '%(Content.ExcludeFromPackage)' != True ">
-				<PackageTarget Condition=" '%(Content.PackageTarget)' != '' ">content\%(Content.PackageTarget)</PackageTarget>
-				<!-- This condition ensures that %(Identity) is not rooted and %(RelativeDir) doesn't contain any '..' path segments -->
-				<PackageTarget Condition=" '%(Content.PackageTarget)' == '' AND '%(Content.RootDir)' == '' AND $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(Content.FullPath)')) == '%(Content.RelativeDir)' ">content\%(Content.RelativeDir)</PackageTarget>
-				<PackageTarget Condition=" '%(Content.PackageTarget)' == '' AND ('%(Content.RootDir)' != '' OR $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(Content.FullPath)')) != '%(Content.RelativeDir)') ">content</PackageTarget>
-			</PackageableProjectOutput>
-
-			<!-- Add required metadata for inner-joins with other item lists; e.g., build output groups -->
-			<PackageableProjectOutput Condition=" '%(PackageableProjectOutput.MSBuildSourceProjectFile)' == '' ">
-				<MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
-			</PackageableProjectOutput>
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All NuGetFlavor projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
-	<Target Name="_ResolveFlavorOutputsForNuSpec" Condition=" '@(NuGetFlavorWithConfiguration)' != '' ">
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="%(NuGetFlavorWithConfiguration.Targets)"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)" />
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="BuiltProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorKeyOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DocumentationProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
-						 Condition=" '$(PackageXmlDocumentation)' == True ">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorKeyOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DebugSymbolsProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
-						 Condition=" '$(PackageSymbols)' == True ">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorOutput" />
-		</MSBuild>
-
-		<!-- TODO: See related comment about satellites in _CreateNuSpecFile
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SatelliteDllsProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorOutput" />
-		</MSBuild>
-		-->
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SGenFilesOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorSerializationOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContractProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorContractOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContentFilesProjectOutputGroup"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
-						 Condition=" '$(PackageContent)' == True ">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorContentOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="_WhiteTieGetTargetFramework"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorTargetFrameworkUnresolved" />
-		</MSBuild>
-
-		<ItemGroup>
-			<!-- FinalOutputPath is typically the bin folder, rather than the obj folder that Identity typically references. -->
-			<_FlavorProjectOutputFinalOutputPath Include="@(_NuGetFlavorKeyOutput)"
-																					 Condition=" '%(_NuGetFlavorKeyOutput.FinalOutputPath)' != ''
-																									 AND '%(_NuGetFlavorKeyOutput.MSBuildSourceProjectFile)' != ''
-																									 AND '%(_NuGetFlavorKeyOutput.FrameworkFile)' != True
-																									 AND '%(_NuGetFlavorKeyOutput.IsSystemReference)' != True
-																									 AND '%(_NuGetFlavorKeyOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' 
-																									 AND '%(_NuGetFlavorKeyOutput.IsKeyOutput)' == True ">
-				<!-- Sometimes it's rooted and sometimes it's relative to the project; e.g., FinalOutputPath for XML doc files seems to always be relative. -->
-				<FinalOutputPath>$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName('%(MSBuildSourceProjectFile)')), '%(FinalOutputPath)'))</FinalOutputPath>
-			</_FlavorProjectOutputFinalOutputPath>
-
-			<PackageableProjectOutput Include="@(_FlavorProjectOutputFinalOutputPath->'%(FinalOutputPath)')" KeepMetadata="MSBuildSourceProjectFile">
-				<IsFlavor>True</IsFlavor>
-			</PackageableProjectOutput>
-			<PackageableProjectOutput Include="@(_NuGetFlavorKeyOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																Condition=" '%(_NuGetFlavorKeyOutput.FinalOutputPath)' == ''
-																				AND '%(_NuGetFlavorKeyOutput.MSBuildSourceProjectFile)' != ''
-																				AND '%(_NuGetFlavorKeyOutput.FrameworkFile)' != True
-																				AND '%(_NuGetFlavorKeyOutput.IsSystemReference)' != True
-																				AND '%(_NuGetFlavorKeyOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades'
-																				AND '%(_NuGetFlavorKeyOutput.IsKeyOutput)' == True ">
-				<IsFlavor>True</IsFlavor>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="@(_NuGetFlavorOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																Condition=" '%(_NuGetFlavorOutput.MSBuildSourceProjectFile)' != ''
-																				AND '%(_NuGetFlavorOutput.FrameworkFile)' != True
-																				AND '%(_NuGetFlavorOutput.IsSystemReference)' != True
-																				AND '%(_NuGetFlavorOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' ">
-				<IsFlavor>True</IsFlavor>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="@(_NuGetFlavorSerializationOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																Condition=" '%(_NuGetFlavorSerializationOutput.MSBuildSourceProjectFile)' != '' ">
-				<IsFlavor>True</IsFlavor>
-				<IsSerializationAssembly>True</IsSerializationAssembly>
-			</PackageableProjectOutput>
-
-			<PackageableProjectOutput Include="@(_NuGetFlavorContractOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																Condition=" '%(_NuGetFlavorContractOutput.MSBuildSourceProjectFile)' != '' ">
-				<IsFlavor>True</IsFlavor>
-				<IsContractOutput>True</IsContractOutput>
-			</PackageableProjectOutput>
-		</ItemGroup>
-
-		<ResolveNuGetTargetLibFolderName TargetFrameworks="@(_NuGetFlavorTargetFrameworkUnresolved)">
-			<Output TaskParameter="LibFolderNames" ItemName="_NuGetFlavorTargetFramework" />
-		</ResolveNuGetTargetLibFolderName>
-
-		<ItemGroup>
-			<PackageableProjectOutput Condition=" '%(PackageableProjectOutput.IsFlavor)' == '' ">
-				<IsFlavor>False</IsFlavor>
-			</PackageableProjectOutput>
-
-			<!-- Inner-join on MSBuildSourceProjectFile -->
-			<NuGetFlavorWithConfiguration Condition=" '%(MSBuildSourceProjectFile)' != '' ">
-				<LibFrameworkFolderName>@(_NuGetFlavorTargetFramework->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-			</NuGetFlavorWithConfiguration>
-			<PackageableProjectOutput Condition=" '%(MSBuildSourceProjectFile)' != '' AND '%(IsFlavor)' == True ">
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-				<PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
-			</PackageableProjectOutput>
-		</ItemGroup>
-
-		<ItemGroup Condition=" '$(PackageContent)' == True ">
-			<_NuGetFlavorContentOutput>
-				<OriginalItemSpecRootDir>$([System.IO.Path]::GetPathRoot('%(OriginalItemSpec)')</OriginalItemSpecRootDir>
-				<OriginalItemSpecRelativeDir>$([System.IO.Path]::GetDirectoryName('%(OriginalItemSpec)')</OriginalItemSpecRelativeDir>
-			</_NuGetFlavorContentOutput>
-
-			<PackageableProjectOutput Include="@(_NuGetFlavorContentOutput)">
-				<IsFlavor>True</IsFlavor>
-				<PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' != '' ">content\%(_NuGetFlavorContentOutput.PackageTarget)</PackageTarget>
-				<!-- This condition ensures that %(OriginalItemSpec) is not rooted and %(OriginalItemSpec) doesn't contain any '..' path segments -->
-				<PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' == '' AND '%(_NuGetFlavorContentOutput.OriginalItemSpecRootDir)' == '' AND $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(_NuGetFlavorContentOutput.FullPath)')) == '%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)' ">content\%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)</PackageTarget>
-				<PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' == '' AND ('%(_NuGetFlavorContentOutput.OriginalItemSpecRootDir)' != '' OR $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(_NuGetFlavorContentOutput.FullPath)')) != '%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)') ">content</PackageTarget>
-			</PackageableProjectOutput>
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All primary project's dependencies (packages.config) -->
-	<Target Name="_ResolvePrimaryDependenciesForNuSpec">
-
-		<BetterXmlPeek Condition=" Exists('$(MSBuildProjectDirectory)\packages.config')"
-									 XmlInputPath="$(MSBuildProjectDirectory)\packages.config"
-									 Query="//package" AttributesAsMetadata="id;version;developmentDependency">
-			<Output TaskParameter="Result" ItemName="_NuSpecPrimaryDependency" />
-		</BetterXmlPeek>
-
-		<ItemGroup>
-			<_NuSpecPrimaryDependencyIntermediate Include="@(_NuSpecPrimaryDependency->'%(id).%(version)')"
-																						Condition=" '%(_NuSpecPrimaryDependency.developmentDependency)' != 'true' ">
-				<PackageId>%(_NuSpecPrimaryDependency.id)</PackageId>
-				<PackageVersion>%(_NuSpecPrimaryDependency.version)</PackageVersion>
-			</_NuSpecPrimaryDependencyIntermediate>
-
-			<PackageableDependency Include="@(_NuSpecPrimaryDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False" />
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All NuGetFlavor projects' dependencies (packages.config) -->
-	<Target Name="_ResolveFlavorDependenciesForNuSpec" Condition=" '@(NuGetFlavorWithConfiguration)' != '' "
-					Inputs="@(NuGetFlavorWithConfiguration)"
-					Outputs="%(NuGetFlavorWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
-
-		<!-- Assume that all flavor projects' target Frameworks have already been resolved by the _ResolveFlavorOutputsForNuSpec target -->
-
-		<ItemGroup>
-			<_NuSpecFlavorDependency Remove="@(_NuSpecFlavorDependency)" />
-		</ItemGroup>
-
-		<BetterXmlPeek Condition=" Exists('%(NuGetFlavorWithConfiguration.RelativeDir)packages.config') "
-									 XmlInputPath="%(NuGetFlavorWithConfiguration.RelativeDir)packages.config"
-									 Query="//package" AttributesAsMetadata="id;version;developmentDependency">
-			<Output TaskParameter="Result" ItemName="_NuSpecFlavorDependency" />
-		</BetterXmlPeek>
-
-		<ItemGroup>
-			<_NuSpecFlavorDependencyIntermediate Include="@(_NuSpecFlavorDependency->'%(id).%(version)')"
-																					 Condition=" '%(_NuSpecFlavorDependency.developmentDependency)' != 'true' ">
-				<PackageId>%(_NuSpecFlavorDependency.id)</PackageId>
-				<PackageVersion>%(_NuSpecFlavorDependency.version)</PackageVersion>
-			</_NuSpecFlavorDependencyIntermediate>
-
-			<PackageableDependency Include="@(_NuSpecFlavorDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False">
-				<IsFlavor>True</IsFlavor>
-				<!--
-				Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
-				
-				For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
-				element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
-				-->
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-			</PackageableDependency>
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All referenced assemblies and recursively referenced projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
-	<PropertyGroup>
-		<_ResolveReferenceOutputsForNuSpecDependsOn>
-			BuiltProjectOutputGroupRecursiveDependencies;
-			DocumentationProjectOutputGroupRecursiveDependencies;
-			DebugSymbolsProjectOutputGroupRecursiveDependencies;
-			SatelliteDllsProjectOutputGroupRecursiveDependencies;
-			SGenFilesOutputGroupRecursiveDependencies;
-			ContractProjectOutputGroupRecursiveDependencies;
-		</_ResolveReferenceOutputsForNuSpecDependsOn>
-	</PropertyGroup>
-	<Target Name="_ResolveReferenceOutputsForNuSpec" DependsOnTargets="$(_ResolveReferenceOutputsForNuSpecDependsOn)"
-					Condition=" '$(PackageReferencedProjects)' == True ">
-
-		<PropertyGroup>
-			<!--
-			TODO: Consider changing the accessibility of this property to "public", though a few targets will also require some refactoring.
-			
-			Currently, the PackageReferencedProjects property controls whether project and assembly references are included; it's all or nothing.
-			I'm not sure whether separating project references from assembly references is needed.  If so, then at the very least all uses of 
-			the PackageReferencedProjects property must be changed; e.g., this target's Condition.
-			-->
-			<_PackageAssemblyReferences Condition=" '$(_PackageAssemblyReferences)' == '' ">True</_PackageAssemblyReferences>
-		</PropertyGroup>
-
-		<ItemGroup>
-			<PackageableProjectReferenceOutput Include="@(BuiltProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" ('%(BuiltProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
-																											OR ('%(BuiltProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
-																								 AND ('%(BuiltProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
-																								 AND '%(BuiltProjectOutputGroupRecursiveDependency.FrameworkFile)' != True
-																								 AND '%(BuiltProjectOutputGroupRecursiveDependency.IsSystemReference)' != True
-																								 AND '%(BuiltProjectOutputGroupRecursiveDependency.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' " />
-
-			<PackageableProjectReferenceOutput Include="@(DocumentationProjectOutputGroupRecursiveDependency->'%(FullPath)')" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" ('%(DocumentationProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
-																											OR ('%(DocumentationProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
-																								 AND ('%(DocumentationProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
-																								 AND '$(PackageXmlDocumentation)' == True " />
-
-			<PackageableProjectReferenceOutput Include="@(DebugSymbolsProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
-																											OR ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
-																								 AND ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
-																								 AND '$(PackageSymbols)' == True " />
-
-			<!-- TODO: See related comment about satellites in _CreateNuSpecFile
-			<PackageableProjectReferenceOutput Include="@(SatelliteDllsProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" '%(SatelliteDllsProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' " />-->
-
-			<PackageableProjectReferenceOutput Include="@(SGenFilesOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" '%(SGenFilesOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' ">
-				<IsSerializationAssembly>True</IsSerializationAssembly>
-			</PackageableProjectReferenceOutput>
-
-			<PackageableProjectReferenceOutput Include="@(ContractProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
-																				 Condition=" '%(ContractProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' ">
-				<IsContractOutput>True</IsContractOutput>
-			</PackageableProjectReferenceOutput>
-
-			<!-- Assembly references do not define MSBuildSourceProjectFile, though it must be defined for inner-joining later. -->
-			<PackageableProjectReferenceOutput Condition=" '%(PackageableProjectReferenceOutput.MSBuildSourceProjectFile)' == '' ">
-				<MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
-			</PackageableProjectReferenceOutput>
-
-			<PackageableProjectReferenceOutput>
-				<PackageTarget>lib</PackageTarget>
-			</PackageableProjectReferenceOutput>
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All NuGetFlavor projects' referenced assemblies and recursively referenced projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
-	<Target Name="_ResolveFlavorReferenceOutputsForNuSpec" DependsOnTargets="_ResolveFlavorOutputsForNuSpec;NuGetFlavorRecursiveReferences"
-					Condition=" '@(NuGetFlavorWithConfiguration)' != '' AND '$(PackageReferencedProjects)' == True "
-					Inputs="@(NuGetFlavorWithConfiguration)"
-					Outputs="%(NuGetFlavorWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
-
-		<!-- Assume that all flavor projects have been built already by the _ResolveFlavorOutputsForNuSpec target -->
-
-		<PropertyGroup>
-			<!--
-			TODO: Consider changing the accessibility of this property to "public", though a few targets will also require some refactoring.
-			
-			Currently, the PackageReferencedProjects property controls whether project and assembly references are included; it's all or nothing.
-			I'm not sure whether separating project references from assembly references is needed.  If so, then at the very least all uses of 
-			the PackageReferencedProjects property must be changed; e.g., this target's Condition.
-			-->
-			<_PackageAssemblyReferences Condition=" '$(_PackageAssemblyReferences)' == '' ">True</_PackageAssemblyReferences>
-		</PropertyGroup>
-
-		<ItemGroup>
-			<_NuGetFlavorReferenceOutput Remove="@(_NuGetFlavorReferenceOutput)" />
-			<_NuGetFlavorReferenceSerializationOutput Remove="@(_NuGetFlavorReferenceSerializationOutput)" />
-			<_NuGetFlavorReferenceContractOutput Remove="@(_NuGetFlavorReferenceContractOutput)" />
-			<_NuGetFlavorProjectReferenceRecursiveDependency Remove="@(_NuGetFlavorProjectReferenceRecursiveDependency)" />
-		</ItemGroup>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="BuiltProjectOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DocumentationProjectOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
-						 Condition=" '$(PackageXmlDocumentation)' == True ">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DebugSymbolsProjectOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
-						 Condition=" '$(PackageSymbols)' == True ">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
-		</MSBuild>
-
-		<!-- TODO: See related comment about satellites in _CreateNuSpecFile 
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SatelliteDllsProjectOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="" />
-		</MSBuild>
-		-->
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SGenFilesOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceSerializationOutput" />
-		</MSBuild>
-
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContractProjectOutputGroupRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceContractOutput" />
-		</MSBuild>
-
-		<ItemGroup>
-			<PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																				 Condition=" '%(_NuGetFlavorReferenceOutput.MSBuildSourceProjectFile)' != ''
-																								 AND ('%(_NuGetFlavorReferenceOutput.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
-																								 AND '%(_NuGetFlavorReferenceOutput.FrameworkFile)' != True
-																								 AND '%(_NuGetFlavorReferenceOutput.IsSystemReference)' != True
-																								 AND '%(_NuGetFlavorReferenceOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' ">
-				<IsFlavor>True</IsFlavor>
-				<!--
-				Reference outputs must target the flavor's Framework group regardless of whether they target different Frameworks.
-				I.e., dependency groups must be defined within the target Framework of the flavor project rather than defining new dependency groups of their own.
-				
-				For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
-				file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
-				element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
-				-->
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the flavor project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-				<PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
-			</PackageableProjectReferenceOutput>
-
-			<PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceSerializationOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																				 Condition=" '%(_NuGetFlavorReferenceSerializationOutput.MSBuildSourceProjectFile)' != '' ">
-				<IsFlavor>True</IsFlavor>
-				<IsSerializationAssembly>True</IsSerializationAssembly>
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the flavor project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-				<PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
-			</PackageableProjectReferenceOutput>
-
-			<PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceContractOutput)" KeepMetadata="MSBuildSourceProjectFile"
-																				 Condition=" '%(_NuGetFlavorReferenceContractOutput.MSBuildSourceProjectFile)' != '' ">
-				<IsFlavor>True</IsFlavor>
-				<IsContractOutput>True</IsContractOutput>
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the flavor project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-				<PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
-			</PackageableProjectReferenceOutput>
-
-			<PackageableProjectReferenceWithConfiguration Include="@(NuGetFlavorWithConfiguration)">
-				<IsFlavor>True</IsFlavor>
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the flavor project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-			</PackageableProjectReferenceWithConfiguration>
-		</ItemGroup>
-
-		<!-- Fix for https://whitetie.codeplex.com/workitem/14 -->
-		<MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ProjectReferenceRecursiveDependencies"
-						 Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorProjectReferenceRecursiveDependency" />
-		</MSBuild>
-
-		<ItemGroup>
-
-			<!-- Inner-join on Identity -->
-			<_NuGetFlavorProjectReferenceRecursiveDependency Condition=" '%(Identity)' != '' AND '@(NuGetFlavorRecursiveReference)' != '' ">
-				<IsPackageDependency>True</IsPackageDependency>
-				<PackageId>@(NuGetFlavorRecursiveReference->'%(PackageId)')</PackageId>
-				<PackageVersion>@(NuGetFlavorRecursiveReference->'%(PackageVersion)')</PackageVersion>
-				<IsDevelopmentDependency>@(NuGetFlavorRecursiveReference->'%(IsDevelopmentDependency)')</IsDevelopmentDependency>
-
-				<!-- Overriding this metadata is acceptable since this is only a temporary item list used by the following inner-join only.  -->
-				<MSBuildSourceProjectFile>@(NuGetFlavorRecursiveReference->'%(Identity)')</MSBuildSourceProjectFile>
-			</_NuGetFlavorProjectReferenceRecursiveDependency>
-
-			<!-- Inner-join on MSBuildSourceProjectFile -->
-			<PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
-																				 Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuGetFlavorProjectReferenceRecursiveDependency)' != '' " />
-
-			<PackageableDependency Include="@(_NuGetFlavorProjectReferenceRecursiveDependency->'%(PackageId).%(PackageVersion)')"
-														 KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False"
-														 Condition=" '%(_NuGetFlavorProjectReferenceRecursiveDependency.IsPackageDependency)' == True
-																		 AND '%(_NuGetFlavorProjectReferenceRecursiveDependency.IsDevelopmentDependency)' != True ">
-				<IsFlavor>True</IsFlavor>
-				<!--
-				Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
-				
-				For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
-				element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
-				-->
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-			</PackageableDependency>
-
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All recursively referenced dependency projects' output (.nupkg) and dependencies (packages.config) -->
-	<Target Name="_ResolveReferenceDependenciesForNuSpec" DependsOnTargets="NuGetPackageProjectOutputGroupDependencies;_ResolveReferenceOutputsForNuSpec"
-					Condition=" '$(PackageReferencedProjects)' == True ">
-
-		<BetterXmlPeek Condition=" Exists('%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config') AND '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' != True "
-									 XmlInputPath="%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config"
-									 Query="//package" AttributesAsMetadata="id;version;developmentDependency"
-									 AdditionalMetadata="MSBuildSourceProjectFile=%(PackageableProjectReferenceWithConfiguration.MSBuildSourceProjectFile)">
-			<Output TaskParameter="Result" ItemName="_NuSpecPackageDependency" />
-		</BetterXmlPeek>
-
-		<ItemGroup>
-			<_NuSpecPackageDependencyIntermediate Include="@(_NuSpecPackageDependency->'%(id).%(version)')"
-																						Condition=" '%(_NuSpecPackageDependency.developmentDependency)' != 'true' ">
-				<PackageId>%(_NuSpecPackageDependency.id)</PackageId>
-				<PackageVersion>%(_NuSpecPackageDependency.version)</PackageVersion>
-				<MSBuildSourceProjectFile>%(_NuSpecPackageDependency.MSBuildSourceProjectFile)</MSBuildSourceProjectFile>
-			</_NuSpecPackageDependencyIntermediate>
-
-			<_NuSpecPackageDependencyIntermediate Include="@(NuGetPackageProjectOutputGroupDependency->'%(PackageId).%(PackageVersion)')"
-																						Condition=" '%(_NuGetFlavorProjectOutputGroupDependency.IsDevelopmentDependency)' != True " />
-
-			<PackageableDependency Include="@(_NuSpecPackageDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False" />
-		</ItemGroup>
-
-		<ItemGroup>
-			<!-- Inner-join on MSBuildSourceProjectFile -->
-			<PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
-																				 Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuSpecPackageDependencyIntermediate)' != '' " />
-
-			<PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
-																				 Condition=" $([System.String]::Copy('%(PackageableProjectReferenceOutput.FullPath)').StartsWith('$(NuGetPackagesDir)')) " />
-		</ItemGroup>
-
-		<!-- Fix for https://whitetie.codeplex.com/workitem/15 -->
-		<ItemGroup>
-			<_PackageableProjectReferenceOutputPackages Include="%(PackageableProjectReferenceOutput.NuGetPackageProjects)"
-																									Condition=" '%(PackageableProjectReferenceOutput.NuGetPackageProjects)' != '' ">
-				<OriginalIdentity>%(PackageableProjectReferenceOutput.Identity)</OriginalIdentity>
-			</_PackageableProjectReferenceOutputPackages>
-
-			<_PackageableProjectReferenceOutputWithPackage Include="%(_PackageableProjectReferenceOutputPackages.OriginalIdentity)">
-				<NuGetPackageProject>%(_PackageableProjectReferenceOutputPackages.Identity)</NuGetPackageProject>
-			</_PackageableProjectReferenceOutputWithPackage>
-
-			<_NuSpecPackageDependencyIntermediate>
-				<NuGetPackageProject>%(MSBuildSourceProjectFile)</NuGetPackageProject>
-			</_NuSpecPackageDependencyIntermediate>
-
-			<!-- Inner-join on NuGetPackageProject -->
-			<_PackageableProjectReferenceOutputWithPackage Remove="@(_PackageableProjectReferenceOutputWithPackage)"
-																										 Condition=" '%(NuGetPackageProject)' != '' AND '@(_NuSpecPackageDependencyIntermediate)' == '' " />
-
-			<PackageableProjectReferenceOutput Remove="@(_PackageableProjectReferenceOutputWithPackage)" />
-		</ItemGroup>
-
-	</Target>
-
-	<!-- All NuGetFlavor projects' recursively referenced dependency projects' output (.nupkg) and dependencies (packages.config) -->
-	<Target Name="_ResolveFlavorReferenceDependenciesForNuSpec" DependsOnTargets="_ResolveFlavorReferenceOutputsForNuSpec"
-					Condition=" '@(NuGetFlavorWithConfiguration)' != '' AND '$(PackageReferencedProjects)' == True "
-					Inputs="@(PackageableProjectReferenceWithConfiguration)"
-					Outputs="%(PackageableProjectReferenceWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
-
-		<!-- Assume that all flavor projects' references have been resolved already, with LibFrameworkFolderName metadata, by the _ResolveFlavorReferenceOutputsForNuSpec target -->
-
-		<ItemGroup>
-			<_NuSpecFlavorPackageDependency Remove="@(_NuSpecFlavorPackageDependency)" />
-			<_NuSpecFlavorPackageDependencyIntermediate Remove="@(_NuSpecFlavorPackageDependencyIntermediate)" />
-			<_NuGetFlavorProjectOutputGroupDependency Remove="@(_NuGetFlavorProjectOutputGroupDependency)" />
-		</ItemGroup>
-
-		<BetterXmlPeek Condition=" Exists('%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config') AND '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' == True "
-									 XmlInputPath="%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config"
-									 Query="//package" AttributesAsMetadata="id;version;developmentDependency">
-			<Output TaskParameter="Result" ItemName="_NuSpecFlavorPackageDependency" />
-		</BetterXmlPeek>
-
-		<ItemGroup>
-			<_NuSpecFlavorPackageDependencyIntermediate Include="@(_NuSpecFlavorPackageDependency->'%(id).%(version)')"
-																									Condition=" '%(_NuSpecFlavorPackageDependency.developmentDependency)' != 'true' ">
-				<PackageId>%(_NuSpecFlavorPackageDependency.id)</PackageId>
-				<PackageVersion>%(_NuSpecFlavorPackageDependency.version)</PackageVersion>
-				<MSBuildSourceProjectFile>%(_NuSpecFlavorPackageDependency.MSBuildSourceProjectFile)</MSBuildSourceProjectFile>
-			</_NuSpecFlavorPackageDependencyIntermediate>
-		</ItemGroup>
-
-		<MSBuild Condition=" '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' == True "
-						 Projects="@(PackageableProjectReferenceWithConfiguration)" Targets="NuGetPackageProjectOutputGroupDependencies"
-						 Properties="%(PackageableProjectReferenceWithConfiguration.SetConfiguration);%(PackageableProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(PackageableProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorProjectOutputGroupDependency" />
-		</MSBuild>
-
-		<ItemGroup>
-			<_NuSpecFlavorPackageDependencyIntermediate Include="@(_NuGetFlavorProjectOutputGroupDependency->'%(PackageId).%(PackageVersion)')"
-																									Condition=" '%(_NuGetFlavorProjectOutputGroupDependency.IsDevelopmentDependency)' != True " />
-
-			<PackageableDependency Include="@(_NuSpecFlavorPackageDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False">
-				<IsFlavor>True</IsFlavor>
-				<!--
-				Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
-				I.e., dependency groups must be defined within the target Framework of the flavor's project rather than defining new dependency groups of their own.
-				
-				For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
-				file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
-				element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
-				-->
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the current project's target Framework.
-				-->
-				<LibFrameworkFolderName>@(PackageableProjectReferenceWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
-			</PackageableDependency>
-
-			<!-- Inner-join on MSBuildSourceProjectFile -->
-			<PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
-																				 Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuSpecFlavorPackageDependencyIntermediate)' != '' " />
-
-			<PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
-																				 Condition=" $([System.String]::Copy('%(PackageableProjectReferenceOutput.FullPath)').StartsWith('$(NuGetPackagesDir)')) " />
-		</ItemGroup>
-
-	</Target>
-
-	<Target Name="_CreateNuSpecFile" Inputs="@(PackageableProjectOutput);@(NuGetPackage)" Outputs="$(NuSpecFile)">
-
-		<ItemGroup>
-			<!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
-			<_NuSpecFilePrimaryReferences Include="
+    <AssignProjectConfiguration ProjectReferences="@(NuGetFlavor)" CurrentProject="$(MSBuildProjectFullPath)"
+                                CurrentProjectConfiguration="$(Configuration)" CurrentProjectPlatform="$(Platform)"
+                                DefaultToVcxPlatformMapping="$(DefaultToVcxPlatformMapping)" VcxToDefaultPlatformMapping="$(VcxToDefaultPlatformMapping)"
+                                OutputType="$(OutputType)" ResolveConfigurationPlatformUsingMappings="false"
+                                SolutionConfigurationContents="$(CurrentSolutionConfigurationContents)"
+                                AddSyntheticProjectReferencesForSolutionDependencies="$(AddSyntheticProjectReferencesForSolutionDependencies)"
+                                OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration="$(OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration)"
+                                ShouldUnsetParentConfigurationAndPlatform="$(ShouldUnsetParentConfigurationAndPlatform)">
+      <Output TaskParameter="AssignedProjects" ItemName="NuGetFlavorWithConfiguration" />
+      <Output TaskParameter="UnassignedProjects" ItemName="NuGetFlavorWithConfiguration" />
+    </AssignProjectConfiguration>
+
+    <ItemGroup>
+      <!-- Add required metadata for inner-joins with other item lists; e.g., build output groups -->
+      <NuGetFlavorWithConfiguration>
+        <MSBuildSourceProjectFile>%(FullPath)</MSBuildSourceProjectFile>
+        <IsFlavor>True</IsFlavor>
+      </NuGetFlavorWithConfiguration>
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All primary project's output (.dll, .xml, .pdb, .Contracts.dll, .chm) -->
+  <PropertyGroup>
+    <!--
+    Most of the following targets are defined in Microsoft.Common.CurrentVersion.targets (MSBuild 12.0; retrieved on 6/22/2014)
+    -->
+    <_ResolvePrimaryOutputsForNuSpecDependsOn>
+      BuiltProjectOutputGroup;
+      DocumentationProjectOutputGroup;
+      DebugSymbolsProjectOutputGroup;
+      SatelliteDllsProjectOutputGroup;
+      SGenFilesOutputGroup;
+      ContractProjectOutputGroup;
+      CompiledDocumentationProjectOutputGroup;
+    </_ResolvePrimaryOutputsForNuSpecDependsOn>
+  </PropertyGroup>
+  <Target Name="_ResolvePrimaryOutputsForNuSpec" DependsOnTargets="$(_ResolvePrimaryOutputsForNuSpecDependsOn)"
+          Returns="@(PackageableProjectOutput)">
+
+    <ItemGroup>
+      <!-- FinalOutputPath is typically the bin folder, rather than the obj folder that Identity typically references. -->
+      <_PackageableProjectOutputFinalOutputPath Include="@(BuiltProjectOutputGroupOutput)"
+                                                Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' != '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True ">
+        <!-- Sometimes it's rooted and sometimes it's relative to the project; e.g., FinalOutputPath for XML doc files seems to always be relative. -->
+        <FinalOutputPath>$([System.IO.Path]::GetFullPath('%(FinalOutputPath)'))</FinalOutputPath>
+      </_PackageableProjectOutputFinalOutputPath>
+
+      <PackageableProjectOutput Include="@(_PackageableProjectOutputFinalOutputPath->'%(FinalOutputPath)')" KeepMetadata="Identity" />
+      <PackageableProjectOutput Include="@(BuiltProjectOutputGroupOutput)" KeepMetadata="Identity"
+                                Condition=" '%(BuiltProjectOutputGroupOutput.FinalOutputPath)' == '' AND '%(BuiltProjectOutputGroupOutput.IsKeyOutput)' == True " />
+
+      <PackageableProjectOutput Include="@(DocumentationProjectOutputGroupOutput->'%(FullPath)')" KeepMetadata="Identity"
+                                Condition=" '$(PackageXmlDocumentation)' == True AND '%(DocumentationProjectOutputGroupOutput.IsKeyOutput)' == True " />
+
+      <PackageableProjectOutput Include="@(DebugSymbolsProjectOutputGroupOutput)" KeepMetadata="Identity"
+                                Condition=" '$(PackageSymbols)' == True " />
+
+      <!-- TODO: See related comment about satellites in _CreateNuSpecFile
+      <PackageableProjectOutput Include="@(SatelliteDllsProjectOutputGroupOutput)" KeepMetadata="Identity" />
+      -->
+
+      <PackageableProjectOutput Include="@(SGenFilesOutputGroupOutput)" KeepMetadata="Identity">
+        <IsSerializationAssembly>True</IsSerializationAssembly>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="@(ContractProjectOutputGroupOutput)">
+        <IsContractOutput>True</IsContractOutput>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="$([System.IO.Path]::GetFullPath('$(CompiledDocumentationFile)'))"
+                                Condition=" '$(PackageCompiledDocumentation)' == True AND '$(CompiledDocumentationFile)' != '' AND Exists('$(CompiledDocumentationFile)') " />
+
+      <PackageableProjectOutput>
+        <PackageTarget>lib</PackageTarget>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="@(Content)" Condition=" '$(PackageContent)' == True AND '%(Content.ExcludeFromPackage)' != True ">
+        <PackageTarget Condition=" '%(Content.PackageTarget)' != '' ">content\%(Content.PackageTarget)</PackageTarget>
+        <!-- This condition ensures that %(Identity) is not rooted and %(RelativeDir) doesn't contain any '..' path segments -->
+        <PackageTarget Condition=" '%(Content.PackageTarget)' == '' AND '%(Content.RootDir)' == '' AND $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(Content.FullPath)')) == '%(Content.RelativeDir)' ">content\%(Content.RelativeDir)</PackageTarget>
+        <PackageTarget Condition=" '%(Content.PackageTarget)' == '' AND ('%(Content.RootDir)' != '' OR $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(Content.FullPath)')) != '%(Content.RelativeDir)') ">content</PackageTarget>
+      </PackageableProjectOutput>
+
+      <!-- Add required metadata for inner-joins with other item lists; e.g., build output groups -->
+      <PackageableProjectOutput Condition=" '%(PackageableProjectOutput.MSBuildSourceProjectFile)' == '' ">
+        <MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
+      </PackageableProjectOutput>
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All NuGetFlavor projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
+  <Target Name="_ResolveFlavorOutputsForNuSpec" Condition=" '@(NuGetFlavorWithConfiguration)' != '' ">
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="%(NuGetFlavorWithConfiguration.Targets)"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)" />
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="BuiltProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorKeyOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DocumentationProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
+             Condition=" '$(PackageXmlDocumentation)' == True ">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorKeyOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DebugSymbolsProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
+             Condition=" '$(PackageSymbols)' == True ">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorOutput" />
+    </MSBuild>
+
+    <!-- TODO: See related comment about satellites in _CreateNuSpecFile
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SatelliteDllsProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorOutput" />
+    </MSBuild>
+    -->
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SGenFilesOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorSerializationOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContractProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorContractOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContentFilesProjectOutputGroup"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
+             Condition=" '$(PackageContent)' == True ">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorContentOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="_WhiteTieGetTargetFramework"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorTargetFrameworkUnresolved" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- FinalOutputPath is typically the bin folder, rather than the obj folder that Identity typically references. -->
+      <_FlavorProjectOutputFinalOutputPath Include="@(_NuGetFlavorKeyOutput)"
+                                           Condition=" '%(_NuGetFlavorKeyOutput.FinalOutputPath)' != ''
+                                                   AND '%(_NuGetFlavorKeyOutput.MSBuildSourceProjectFile)' != ''
+                                                   AND '%(_NuGetFlavorKeyOutput.FrameworkFile)' != True
+                                                   AND '%(_NuGetFlavorKeyOutput.IsSystemReference)' != True
+                                                   AND '%(_NuGetFlavorKeyOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' 
+                                                   AND '%(_NuGetFlavorKeyOutput.IsKeyOutput)' == True ">
+        <!-- Sometimes it's rooted and sometimes it's relative to the project; e.g., FinalOutputPath for XML doc files seems to always be relative. -->
+        <FinalOutputPath>$([System.IO.Path]::Combine($([System.IO.Path]::GetDirectoryName('%(MSBuildSourceProjectFile)')), '%(FinalOutputPath)'))</FinalOutputPath>
+      </_FlavorProjectOutputFinalOutputPath>
+
+      <PackageableProjectOutput Include="@(_FlavorProjectOutputFinalOutputPath->'%(FinalOutputPath)')" KeepMetadata="MSBuildSourceProjectFile">
+        <IsFlavor>True</IsFlavor>
+      </PackageableProjectOutput>
+      <PackageableProjectOutput Include="@(_NuGetFlavorKeyOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                Condition=" '%(_NuGetFlavorKeyOutput.FinalOutputPath)' == ''
+                                        AND '%(_NuGetFlavorKeyOutput.MSBuildSourceProjectFile)' != ''
+                                        AND '%(_NuGetFlavorKeyOutput.FrameworkFile)' != True
+                                        AND '%(_NuGetFlavorKeyOutput.IsSystemReference)' != True
+                                        AND '%(_NuGetFlavorKeyOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades'
+                                        AND '%(_NuGetFlavorKeyOutput.IsKeyOutput)' == True ">
+        <IsFlavor>True</IsFlavor>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="@(_NuGetFlavorOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                Condition=" '%(_NuGetFlavorOutput.MSBuildSourceProjectFile)' != ''
+                                        AND '%(_NuGetFlavorOutput.FrameworkFile)' != True
+                                        AND '%(_NuGetFlavorOutput.IsSystemReference)' != True
+                                        AND '%(_NuGetFlavorOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' ">
+        <IsFlavor>True</IsFlavor>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="@(_NuGetFlavorSerializationOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                Condition=" '%(_NuGetFlavorSerializationOutput.MSBuildSourceProjectFile)' != '' ">
+        <IsFlavor>True</IsFlavor>
+        <IsSerializationAssembly>True</IsSerializationAssembly>
+      </PackageableProjectOutput>
+
+      <PackageableProjectOutput Include="@(_NuGetFlavorContractOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                Condition=" '%(_NuGetFlavorContractOutput.MSBuildSourceProjectFile)' != '' ">
+        <IsFlavor>True</IsFlavor>
+        <IsContractOutput>True</IsContractOutput>
+      </PackageableProjectOutput>
+    </ItemGroup>
+
+    <ResolveNuGetTargetLibFolderName TargetFrameworks="@(_NuGetFlavorTargetFrameworkUnresolved)">
+      <Output TaskParameter="LibFolderNames" ItemName="_NuGetFlavorTargetFramework" />
+    </ResolveNuGetTargetLibFolderName>
+
+    <ItemGroup>
+      <PackageableProjectOutput Condition=" '%(PackageableProjectOutput.IsFlavor)' == '' ">
+        <IsFlavor>False</IsFlavor>
+      </PackageableProjectOutput>
+
+      <!-- Inner-join on MSBuildSourceProjectFile -->
+      <NuGetFlavorWithConfiguration Condition=" '%(MSBuildSourceProjectFile)' != '' ">
+        <LibFrameworkFolderName>@(_NuGetFlavorTargetFramework->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+      </NuGetFlavorWithConfiguration>
+      <PackageableProjectOutput Condition=" '%(MSBuildSourceProjectFile)' != '' AND '%(IsFlavor)' == True ">
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+        <PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
+      </PackageableProjectOutput>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(PackageContent)' == True ">
+      <_NuGetFlavorContentOutput>
+        <OriginalItemSpecRootDir>$([System.IO.Path]::GetPathRoot('%(OriginalItemSpec)')</OriginalItemSpecRootDir>
+        <OriginalItemSpecRelativeDir>$([System.IO.Path]::GetDirectoryName('%(OriginalItemSpec)')</OriginalItemSpecRelativeDir>
+      </_NuGetFlavorContentOutput>
+
+      <PackageableProjectOutput Include="@(_NuGetFlavorContentOutput)">
+        <IsFlavor>True</IsFlavor>
+        <PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' != '' ">content\%(_NuGetFlavorContentOutput.PackageTarget)</PackageTarget>
+        <!-- This condition ensures that %(OriginalItemSpec) is not rooted and %(OriginalItemSpec) doesn't contain any '..' path segments -->
+        <PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' == '' AND '%(_NuGetFlavorContentOutput.OriginalItemSpecRootDir)' == '' AND $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(_NuGetFlavorContentOutput.FullPath)')) == '%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)' ">content\%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)</PackageTarget>
+        <PackageTarget Condition=" '%(_NuGetFlavorContentOutput.PackageTarget)' == '' AND ('%(_NuGetFlavorContentOutput.OriginalItemSpecRootDir)' != '' OR $([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '%(_NuGetFlavorContentOutput.FullPath)')) != '%(_NuGetFlavorContentOutput.OriginalItemSpecRelativeDir)') ">content</PackageTarget>
+      </PackageableProjectOutput>
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All primary project's dependencies (packages.config) -->
+  <Target Name="_ResolvePrimaryDependenciesForNuSpec">
+
+    <BetterXmlPeek Condition=" Exists('$(MSBuildProjectDirectory)\packages.config')"
+                   XmlInputPath="$(MSBuildProjectDirectory)\packages.config"
+                   Query="//package" AttributesAsMetadata="id;version;developmentDependency">
+      <Output TaskParameter="Result" ItemName="_NuSpecPrimaryDependency" />
+    </BetterXmlPeek>
+
+    <ItemGroup>
+      <_NuSpecPrimaryDependencyIntermediate Include="@(_NuSpecPrimaryDependency->'%(id).%(version)')"
+                                            Condition=" '%(_NuSpecPrimaryDependency.developmentDependency)' != 'true' ">
+        <PackageId>%(_NuSpecPrimaryDependency.id)</PackageId>
+        <PackageVersion>%(_NuSpecPrimaryDependency.version)</PackageVersion>
+      </_NuSpecPrimaryDependencyIntermediate>
+
+      <PackageableDependency Include="@(_NuSpecPrimaryDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False" />
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All NuGetFlavor projects' dependencies (packages.config) -->
+  <Target Name="_ResolveFlavorDependenciesForNuSpec" Condition=" '@(NuGetFlavorWithConfiguration)' != '' "
+          Inputs="@(NuGetFlavorWithConfiguration)"
+          Outputs="%(NuGetFlavorWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
+
+    <!-- Assume that all flavor projects' target Frameworks have already been resolved by the _ResolveFlavorOutputsForNuSpec target -->
+
+    <ItemGroup>
+      <_NuSpecFlavorDependency Remove="@(_NuSpecFlavorDependency)" />
+    </ItemGroup>
+
+    <BetterXmlPeek Condition=" Exists('%(NuGetFlavorWithConfiguration.RelativeDir)packages.config') "
+                   XmlInputPath="%(NuGetFlavorWithConfiguration.RelativeDir)packages.config"
+                   Query="//package" AttributesAsMetadata="id;version;developmentDependency">
+      <Output TaskParameter="Result" ItemName="_NuSpecFlavorDependency" />
+    </BetterXmlPeek>
+
+    <ItemGroup>
+      <_NuSpecFlavorDependencyIntermediate Include="@(_NuSpecFlavorDependency->'%(id).%(version)')"
+                                           Condition=" '%(_NuSpecFlavorDependency.developmentDependency)' != 'true' ">
+        <PackageId>%(_NuSpecFlavorDependency.id)</PackageId>
+        <PackageVersion>%(_NuSpecFlavorDependency.version)</PackageVersion>
+      </_NuSpecFlavorDependencyIntermediate>
+
+      <PackageableDependency Include="@(_NuSpecFlavorDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False">
+        <IsFlavor>True</IsFlavor>
+        <!--
+        Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
+        
+        For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
+        element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
+        -->
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+      </PackageableDependency>
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All referenced assemblies and recursively referenced projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
+  <PropertyGroup>
+    <_ResolveReferenceOutputsForNuSpecDependsOn>
+      BuiltProjectOutputGroupRecursiveDependencies;
+      DocumentationProjectOutputGroupRecursiveDependencies;
+      DebugSymbolsProjectOutputGroupRecursiveDependencies;
+      SatelliteDllsProjectOutputGroupRecursiveDependencies;
+      SGenFilesOutputGroupRecursiveDependencies;
+      ContractProjectOutputGroupRecursiveDependencies;
+    </_ResolveReferenceOutputsForNuSpecDependsOn>
+  </PropertyGroup>
+  <Target Name="_ResolveReferenceOutputsForNuSpec" DependsOnTargets="$(_ResolveReferenceOutputsForNuSpecDependsOn)"
+          Condition=" '$(PackageReferencedProjects)' == True ">
+
+    <PropertyGroup>
+      <!--
+      TODO: Consider changing the accessibility of this property to "public", though a few targets will also require some refactoring.
+      
+      Currently, the PackageReferencedProjects property controls whether project and assembly references are included; it's all or nothing.
+      I'm not sure whether separating project references from assembly references is needed.  If so, then at the very least all uses of 
+      the PackageReferencedProjects property must be changed; e.g., this target's Condition.
+      -->
+      <_PackageAssemblyReferences Condition=" '$(_PackageAssemblyReferences)' == '' ">True</_PackageAssemblyReferences>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageableProjectReferenceOutput Include="@(BuiltProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" ('%(BuiltProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
+                                                      OR ('%(BuiltProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
+                                                 AND ('%(BuiltProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
+                                                 AND '%(BuiltProjectOutputGroupRecursiveDependency.FrameworkFile)' != True
+                                                 AND '%(BuiltProjectOutputGroupRecursiveDependency.IsSystemReference)' != True
+                                                 AND '%(BuiltProjectOutputGroupRecursiveDependency.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' " />
+
+      <PackageableProjectReferenceOutput Include="@(DocumentationProjectOutputGroupRecursiveDependency->'%(FullPath)')" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" ('%(DocumentationProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
+                                                      OR ('%(DocumentationProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
+                                                 AND ('%(DocumentationProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
+                                                 AND '$(PackageXmlDocumentation)' == True " />
+
+      <PackageableProjectReferenceOutput Include="@(DebugSymbolsProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != ''
+                                                      OR ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.ReferenceSourceTarget)' == 'ResolveAssemblyReference' AND '$(_PackageAssemblyReferences)' == True))
+                                                 AND ('%(DebugSymbolsProjectOutputGroupRecursiveDependency.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
+                                                 AND '$(PackageSymbols)' == True " />
+
+      <!-- TODO: See related comment about satellites in _CreateNuSpecFile
+      <PackageableProjectReferenceOutput Include="@(SatelliteDllsProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" '%(SatelliteDllsProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' " />-->
+
+      <PackageableProjectReferenceOutput Include="@(SGenFilesOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" '%(SGenFilesOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' ">
+        <IsSerializationAssembly>True</IsSerializationAssembly>
+      </PackageableProjectReferenceOutput>
+
+      <PackageableProjectReferenceOutput Include="@(ContractProjectOutputGroupRecursiveDependency)" KeepMetadata="MSBuildSourceProjectFile;NuGetPackageProjects"
+                                         Condition=" '%(ContractProjectOutputGroupRecursiveDependency.MSBuildSourceProjectFile)' != '' ">
+        <IsContractOutput>True</IsContractOutput>
+      </PackageableProjectReferenceOutput>
+
+      <!-- Assembly references do not define MSBuildSourceProjectFile, though it must be defined for inner-joining later. -->
+      <PackageableProjectReferenceOutput Condition=" '%(PackageableProjectReferenceOutput.MSBuildSourceProjectFile)' == '' ">
+        <MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
+      </PackageableProjectReferenceOutput>
+
+      <PackageableProjectReferenceOutput>
+        <PackageTarget>lib</PackageTarget>
+      </PackageableProjectReferenceOutput>
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All NuGetFlavor projects' referenced assemblies and recursively referenced projects' output (.dll, .xml, .pdb, .Contracts.dll) -->
+  <Target Name="_ResolveFlavorReferenceOutputsForNuSpec" DependsOnTargets="_ResolveFlavorOutputsForNuSpec;NuGetFlavorRecursiveReferences"
+          Condition=" '@(NuGetFlavorWithConfiguration)' != '' AND '$(PackageReferencedProjects)' == True "
+          Inputs="@(NuGetFlavorWithConfiguration)"
+          Outputs="%(NuGetFlavorWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
+
+    <!-- Assume that all flavor projects have been built already by the _ResolveFlavorOutputsForNuSpec target -->
+
+    <PropertyGroup>
+      <!--
+      TODO: Consider changing the accessibility of this property to "public", though a few targets will also require some refactoring.
+      
+      Currently, the PackageReferencedProjects property controls whether project and assembly references are included; it's all or nothing.
+      I'm not sure whether separating project references from assembly references is needed.  If so, then at the very least all uses of 
+      the PackageReferencedProjects property must be changed; e.g., this target's Condition.
+      -->
+      <_PackageAssemblyReferences Condition=" '$(_PackageAssemblyReferences)' == '' ">True</_PackageAssemblyReferences>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_NuGetFlavorReferenceOutput Remove="@(_NuGetFlavorReferenceOutput)" />
+      <_NuGetFlavorReferenceSerializationOutput Remove="@(_NuGetFlavorReferenceSerializationOutput)" />
+      <_NuGetFlavorReferenceContractOutput Remove="@(_NuGetFlavorReferenceContractOutput)" />
+      <_NuGetFlavorProjectReferenceRecursiveDependency Remove="@(_NuGetFlavorProjectReferenceRecursiveDependency)" />
+    </ItemGroup>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="BuiltProjectOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DocumentationProjectOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
+             Condition=" '$(PackageXmlDocumentation)' == True ">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="DebugSymbolsProjectOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)"
+             Condition=" '$(PackageSymbols)' == True ">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceOutput" />
+    </MSBuild>
+
+    <!-- TODO: See related comment about satellites in _CreateNuSpecFile 
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SatelliteDllsProjectOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="" />
+    </MSBuild>
+    -->
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="SGenFilesOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceSerializationOutput" />
+    </MSBuild>
+
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ContractProjectOutputGroupRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorReferenceContractOutput" />
+    </MSBuild>
+
+    <ItemGroup>
+      <PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                         Condition=" '%(_NuGetFlavorReferenceOutput.MSBuildSourceProjectFile)' != ''
+                                                 AND ('%(_NuGetFlavorReferenceOutput.ReferenceOutputAssembly)' == True OR '$(_PackageAssemblyReferences)' == True)
+                                                 AND '%(_NuGetFlavorReferenceOutput.FrameworkFile)' != True
+                                                 AND '%(_NuGetFlavorReferenceOutput.IsSystemReference)' != True
+                                                 AND '%(_NuGetFlavorReferenceOutput.ResolvedFrom)' != 'ImplicitlyExpandDesignTimeFacades' ">
+        <IsFlavor>True</IsFlavor>
+        <!--
+        Reference outputs must target the flavor's Framework group regardless of whether they target different Frameworks.
+        I.e., dependency groups must be defined within the target Framework of the flavor project rather than defining new dependency groups of their own.
+        
+        For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
+        file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
+        element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
+        -->
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the flavor project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+        <PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
+      </PackageableProjectReferenceOutput>
+
+      <PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceSerializationOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                         Condition=" '%(_NuGetFlavorReferenceSerializationOutput.MSBuildSourceProjectFile)' != '' ">
+        <IsFlavor>True</IsFlavor>
+        <IsSerializationAssembly>True</IsSerializationAssembly>
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the flavor project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+        <PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
+      </PackageableProjectReferenceOutput>
+
+      <PackageableProjectReferenceOutput Include="@(_NuGetFlavorReferenceContractOutput)" KeepMetadata="MSBuildSourceProjectFile"
+                                         Condition=" '%(_NuGetFlavorReferenceContractOutput.MSBuildSourceProjectFile)' != '' ">
+        <IsFlavor>True</IsFlavor>
+        <IsContractOutput>True</IsContractOutput>
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the flavor project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+        <PackageTarget>@(NuGetFlavorWithConfiguration->'lib\%(LibFrameworkFolderName)')</PackageTarget>
+      </PackageableProjectReferenceOutput>
+
+      <PackageableProjectReferenceWithConfiguration Include="@(NuGetFlavorWithConfiguration)">
+        <IsFlavor>True</IsFlavor>
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the flavor project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+      </PackageableProjectReferenceWithConfiguration>
+    </ItemGroup>
+
+    <!-- Fix for https://whitetie.codeplex.com/workitem/14 -->
+    <MSBuild Projects="%(NuGetFlavorWithConfiguration.Identity)" Targets="ProjectReferenceRecursiveDependencies"
+             Properties="%(NuGetFlavorWithConfiguration.SetConfiguration);%(NuGetFlavorWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(NuGetFlavorWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorProjectReferenceRecursiveDependency" />
+    </MSBuild>
+
+    <ItemGroup>
+
+      <!-- Inner-join on Identity -->
+      <_NuGetFlavorProjectReferenceRecursiveDependency Condition=" '%(Identity)' != '' AND '@(NuGetFlavorRecursiveReference)' != '' ">
+        <IsPackageDependency>True</IsPackageDependency>
+        <PackageId>@(NuGetFlavorRecursiveReference->'%(PackageId)')</PackageId>
+        <PackageVersion>@(NuGetFlavorRecursiveReference->'%(PackageVersion)')</PackageVersion>
+        <IsDevelopmentDependency>@(NuGetFlavorRecursiveReference->'%(IsDevelopmentDependency)')</IsDevelopmentDependency>
+
+        <!-- Overriding this metadata is acceptable since this is only a temporary item list used by the following inner-join only.  -->
+        <MSBuildSourceProjectFile>@(NuGetFlavorRecursiveReference->'%(Identity)')</MSBuildSourceProjectFile>
+      </_NuGetFlavorProjectReferenceRecursiveDependency>
+
+      <!-- Inner-join on MSBuildSourceProjectFile -->
+      <PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
+                                         Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuGetFlavorProjectReferenceRecursiveDependency)' != '' " />
+
+      <PackageableDependency Include="@(_NuGetFlavorProjectReferenceRecursiveDependency->'%(PackageId).%(PackageVersion)')"
+                             KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False"
+                             Condition=" '%(_NuGetFlavorProjectReferenceRecursiveDependency.IsPackageDependency)' == True
+                                     AND '%(_NuGetFlavorProjectReferenceRecursiveDependency.IsDevelopmentDependency)' != True ">
+        <IsFlavor>True</IsFlavor>
+        <!--
+        Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
+        
+        For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
+        element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
+        -->
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(NuGetFlavorWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+      </PackageableDependency>
+
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All recursively referenced dependency projects' output (.nupkg) and dependencies (packages.config) -->
+  <Target Name="_ResolveReferenceDependenciesForNuSpec" DependsOnTargets="NuGetPackageProjectOutputGroupDependencies;_ResolveReferenceOutputsForNuSpec"
+          Condition=" '$(PackageReferencedProjects)' == True ">
+
+    <BetterXmlPeek Condition=" Exists('%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config') AND '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' != True "
+                   XmlInputPath="%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config"
+                   Query="//package" AttributesAsMetadata="id;version;developmentDependency"
+                   AdditionalMetadata="MSBuildSourceProjectFile=%(PackageableProjectReferenceWithConfiguration.MSBuildSourceProjectFile)">
+      <Output TaskParameter="Result" ItemName="_NuSpecPackageDependency" />
+    </BetterXmlPeek>
+
+    <ItemGroup>
+      <_NuSpecPackageDependencyIntermediate Include="@(_NuSpecPackageDependency->'%(id).%(version)')"
+                                            Condition=" '%(_NuSpecPackageDependency.developmentDependency)' != 'true' ">
+        <PackageId>%(_NuSpecPackageDependency.id)</PackageId>
+        <PackageVersion>%(_NuSpecPackageDependency.version)</PackageVersion>
+        <MSBuildSourceProjectFile>%(_NuSpecPackageDependency.MSBuildSourceProjectFile)</MSBuildSourceProjectFile>
+      </_NuSpecPackageDependencyIntermediate>
+
+      <_NuSpecPackageDependencyIntermediate Include="@(NuGetPackageProjectOutputGroupDependency->'%(PackageId).%(PackageVersion)')"
+                                            Condition=" '%(_NuGetFlavorProjectOutputGroupDependency.IsDevelopmentDependency)' != True " />
+
+      <PackageableDependency Include="@(_NuSpecPackageDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- Inner-join on MSBuildSourceProjectFile -->
+      <PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
+                                         Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuSpecPackageDependencyIntermediate)' != '' " />
+
+      <PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
+                                         Condition=" $([System.String]::Copy('%(PackageableProjectReferenceOutput.FullPath)').StartsWith('$(NuGetPackagesDir)')) " />
+    </ItemGroup>
+
+    <!-- Fix for https://whitetie.codeplex.com/workitem/15 -->
+    <ItemGroup>
+      <_PackageableProjectReferenceOutputPackages Include="%(PackageableProjectReferenceOutput.NuGetPackageProjects)"
+                                                  Condition=" '%(PackageableProjectReferenceOutput.NuGetPackageProjects)' != '' ">
+        <OriginalIdentity>%(PackageableProjectReferenceOutput.Identity)</OriginalIdentity>
+      </_PackageableProjectReferenceOutputPackages>
+
+      <_PackageableProjectReferenceOutputWithPackage Include="%(_PackageableProjectReferenceOutputPackages.OriginalIdentity)">
+        <NuGetPackageProject>%(_PackageableProjectReferenceOutputPackages.Identity)</NuGetPackageProject>
+      </_PackageableProjectReferenceOutputWithPackage>
+
+      <_NuSpecPackageDependencyIntermediate>
+        <NuGetPackageProject>%(MSBuildSourceProjectFile)</NuGetPackageProject>
+      </_NuSpecPackageDependencyIntermediate>
+
+      <!-- Inner-join on NuGetPackageProject -->
+      <_PackageableProjectReferenceOutputWithPackage Remove="@(_PackageableProjectReferenceOutputWithPackage)"
+                                                     Condition=" '%(NuGetPackageProject)' != '' AND '@(_NuSpecPackageDependencyIntermediate)' == '' " />
+
+      <PackageableProjectReferenceOutput Remove="@(_PackageableProjectReferenceOutputWithPackage)" />
+    </ItemGroup>
+
+  </Target>
+
+  <!-- All NuGetFlavor projects' recursively referenced dependency projects' output (.nupkg) and dependencies (packages.config) -->
+  <Target Name="_ResolveFlavorReferenceDependenciesForNuSpec" DependsOnTargets="_ResolveFlavorReferenceOutputsForNuSpec"
+          Condition=" '@(NuGetFlavorWithConfiguration)' != '' AND '$(PackageReferencedProjects)' == True "
+          Inputs="@(PackageableProjectReferenceWithConfiguration)"
+          Outputs="%(PackageableProjectReferenceWithConfiguration.Identity)-NEVER EXISTS TO FORCE BATCHING">
+
+    <!-- Assume that all flavor projects' references have been resolved already, with LibFrameworkFolderName metadata, by the _ResolveFlavorReferenceOutputsForNuSpec target -->
+
+    <ItemGroup>
+      <_NuSpecFlavorPackageDependency Remove="@(_NuSpecFlavorPackageDependency)" />
+      <_NuSpecFlavorPackageDependencyIntermediate Remove="@(_NuSpecFlavorPackageDependencyIntermediate)" />
+      <_NuGetFlavorProjectOutputGroupDependency Remove="@(_NuGetFlavorProjectOutputGroupDependency)" />
+    </ItemGroup>
+
+    <BetterXmlPeek Condition=" Exists('%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config') AND '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' == True "
+                   XmlInputPath="%(PackageableProjectReferenceWithConfiguration.RelativeDir)packages.config"
+                   Query="//package" AttributesAsMetadata="id;version;developmentDependency">
+      <Output TaskParameter="Result" ItemName="_NuSpecFlavorPackageDependency" />
+    </BetterXmlPeek>
+
+    <ItemGroup>
+      <_NuSpecFlavorPackageDependencyIntermediate Include="@(_NuSpecFlavorPackageDependency->'%(id).%(version)')"
+                                                  Condition=" '%(_NuSpecFlavorPackageDependency.developmentDependency)' != 'true' ">
+        <PackageId>%(_NuSpecFlavorPackageDependency.id)</PackageId>
+        <PackageVersion>%(_NuSpecFlavorPackageDependency.version)</PackageVersion>
+        <MSBuildSourceProjectFile>%(_NuSpecFlavorPackageDependency.MSBuildSourceProjectFile)</MSBuildSourceProjectFile>
+      </_NuSpecFlavorPackageDependencyIntermediate>
+    </ItemGroup>
+
+    <MSBuild Condition=" '%(PackageableProjectReferenceWithConfiguration.IsFlavor)' == True "
+             Projects="@(PackageableProjectReferenceWithConfiguration)" Targets="NuGetPackageProjectOutputGroupDependencies"
+             Properties="%(PackageableProjectReferenceWithConfiguration.SetConfiguration);%(PackageableProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(PackageableProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorProjectOutputGroupDependency" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_NuSpecFlavorPackageDependencyIntermediate Include="@(_NuGetFlavorProjectOutputGroupDependency->'%(PackageId).%(PackageVersion)')"
+                                                  Condition=" '%(_NuGetFlavorProjectOutputGroupDependency.IsDevelopmentDependency)' != True " />
+
+      <PackageableDependency Include="@(_NuSpecFlavorPackageDependencyIntermediate)" KeepMetadata="PackageId;PackageVersion" KeepDuplicates="False">
+        <IsFlavor>True</IsFlavor>
+        <!--
+        Dependencies must target the flavor's Framework group regardless of their specific target Frameworks.
+        I.e., dependency groups must be defined within the target Framework of the flavor's project rather than defining new dependency groups of their own.
+        
+        For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
+        file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
+        element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
+        -->
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the reference then it must be valid under the current project's target Framework.
+        -->
+        <LibFrameworkFolderName>@(PackageableProjectReferenceWithConfiguration->'%(LibFrameworkFolderName)')</LibFrameworkFolderName>
+      </PackageableDependency>
+
+      <!-- Inner-join on MSBuildSourceProjectFile -->
+      <PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
+                                         Condition=" '%(MSBuildSourceProjectFile)' != '' AND '@(_NuSpecFlavorPackageDependencyIntermediate)' != '' " />
+
+      <PackageableProjectReferenceOutput Remove="@(PackageableProjectReferenceOutput)"
+                                         Condition=" $([System.String]::Copy('%(PackageableProjectReferenceOutput.FullPath)').StartsWith('$(NuGetPackagesDir)')) " />
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="_CreateNuSpecFile" Inputs="@(PackageableProjectOutput);@(NuGetPackage)" Outputs="$(NuSpecFile)">
+
+    <ItemGroup>
+      <!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
+      <_NuSpecFilePrimaryReferences Include="
 &lt;reference file=&quot;$([System.String]::Copy('%(PackageableProjectOutput.Filename)%(PackageableProjectOutput.Extension)').Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&quot; /&gt;"
-																		Condition=" ('%(PackageableProjectOutput.Extension)' == '.dll' OR '%(PackageableProjectOutput.Extension)' == '.exe')
-																						AND '%(PackageableProjectOutput.IsFlavor)' != True
-																						AND '%(PackageableProjectOutput.IsContractOutput)' != True
-																						AND '%(PackageableProjectOutput.IsSerializationAssembly)' != True " />
+                                    Condition=" ('%(PackageableProjectOutput.Extension)' == '.dll' OR '%(PackageableProjectOutput.Extension)' == '.exe')
+                                            AND '%(PackageableProjectOutput.IsFlavor)' != True
+                                            AND '%(PackageableProjectOutput.IsContractOutput)' != True
+                                            AND '%(PackageableProjectOutput.IsSerializationAssembly)' != True " />
 
-			<_NuSpecFilePrimaryReferences Include="
+      <_NuSpecFilePrimaryReferences Include="
 &lt;reference file=&quot;$([System.String]::Copy('%(PackageableProjectReferenceOutput.Filename)%(PackageableProjectReferenceOutput.Extension)').Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&quot; /&gt;"
-																		Condition=" ('%(PackageableProjectReferenceOutput.Extension)' == '.dll' OR '%(PackageableProjectReferenceOutput.Extension)' == '.exe')
-																						AND '%(PackageableProjectReferenceOutput.IsFlavor)' != True
-																						AND '%(PackageableProjectReferenceOutput.IsContractOutput)' != True
-																						AND '%(PackageableProjectReferenceOutput.IsSerializationAssembly)' != True " />
+                                    Condition=" ('%(PackageableProjectReferenceOutput.Extension)' == '.dll' OR '%(PackageableProjectReferenceOutput.Extension)' == '.exe')
+                                            AND '%(PackageableProjectReferenceOutput.IsFlavor)' != True
+                                            AND '%(PackageableProjectReferenceOutput.IsContractOutput)' != True
+                                            AND '%(PackageableProjectReferenceOutput.IsSerializationAssembly)' != True " />
 
-			<_NuSpecFileFlavorReferences Include="
+      <_NuSpecFileFlavorReferences Include="
 &lt;reference file=&quot;$([System.String]::Copy('%(PackageableProjectOutput.Filename)%(PackageableProjectOutput.Extension)').Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&quot; /&gt;"
-																	 Condition=" ('%(PackageableProjectOutput.Extension)' == '.dll' OR '%(PackageableProjectOutput.Extension)' == '.exe')
-																						AND '%(PackageableProjectOutput.IsFlavor)' == True
-																						AND '%(PackageableProjectOutput.IsContractOutput)' != True
-																						AND '%(PackageableProjectOutput.IsSerializationAssembly)' != True ">
-				<LibFrameworkFolderName>%(PackageableProjectOutput.LibFrameworkFolderName)</LibFrameworkFolderName>
-			</_NuSpecFileFlavorReferences>
+                                   Condition=" ('%(PackageableProjectOutput.Extension)' == '.dll' OR '%(PackageableProjectOutput.Extension)' == '.exe')
+                                            AND '%(PackageableProjectOutput.IsFlavor)' == True
+                                            AND '%(PackageableProjectOutput.IsContractOutput)' != True
+                                            AND '%(PackageableProjectOutput.IsSerializationAssembly)' != True ">
+        <LibFrameworkFolderName>%(PackageableProjectOutput.LibFrameworkFolderName)</LibFrameworkFolderName>
+      </_NuSpecFileFlavorReferences>
 
-			<_NuSpecFileFlavorReferences Include="
+      <_NuSpecFileFlavorReferences Include="
 &lt;reference file=&quot;$([System.String]::Copy('%(PackageableProjectReferenceOutput.Filename)%(PackageableProjectReferenceOutput.Extension)').Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&quot; /&gt;"
-																	 Condition=" ('%(PackageableProjectReferenceOutput.Extension)' == '.dll' OR '%(PackageableProjectReferenceOutput.Extension)' == '.exe')
-																						AND '%(PackageableProjectReferenceOutput.IsFlavor)' == True
-																						AND '%(PackageableProjectReferenceOutput.IsContractOutput)' != True
-																						AND '%(PackageableProjectReferenceOutput.IsSerializationAssembly)' != True ">
-				<LibFrameworkFolderName>%(PackageableProjectReferenceOutput.LibFrameworkFolderName)</LibFrameworkFolderName>
-			</_NuSpecFileFlavorReferences>
+                                   Condition=" ('%(PackageableProjectReferenceOutput.Extension)' == '.dll' OR '%(PackageableProjectReferenceOutput.Extension)' == '.exe')
+                                            AND '%(PackageableProjectReferenceOutput.IsFlavor)' == True
+                                            AND '%(PackageableProjectReferenceOutput.IsContractOutput)' != True
+                                            AND '%(PackageableProjectReferenceOutput.IsSerializationAssembly)' != True ">
+        <LibFrameworkFolderName>%(PackageableProjectReferenceOutput.LibFrameworkFolderName)</LibFrameworkFolderName>
+      </_NuSpecFileFlavorReferences>
 
-			<!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
-			<_NuSpecFileFlavorReferenceGroups Include="@(_NuSpecFileFlavorReferences->'%(LibFrameworkFolderName)')" KeepMetadata="LibFrameworkFolderName" KeepDuplicates="False" />
-			<_NuSpecFileFlavorReferenceGroups Condition=" '%(LibFrameworkFolderName)' != '' ">
-				<References>@(_NuSpecFileFlavorReferences, '')</References>
-			</_NuSpecFileFlavorReferenceGroups>
+      <!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
+      <_NuSpecFileFlavorReferenceGroups Include="@(_NuSpecFileFlavorReferences->'%(LibFrameworkFolderName)')" KeepMetadata="LibFrameworkFolderName" KeepDuplicates="False" />
+      <_NuSpecFileFlavorReferenceGroups Condition=" '%(LibFrameworkFolderName)' != '' ">
+        <References>@(_NuSpecFileFlavorReferences, '')</References>
+      </_NuSpecFileFlavorReferenceGroups>
 
-			<PackageableDependency>
-				<NuSpecElement>
-					<![CDATA[
+      <PackageableDependency>
+        <NuSpecElement>
+          <![CDATA[
 <dependency id="$([System.String]::Copy('%(PackageId)').Replace('&', '&amp;').Replace('"<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))"
-						version="$([System.String]::Copy('%(PackageVersion)').Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))" />]]>
-				</NuSpecElement>
+            version="$([System.String]::Copy('%(PackageVersion)').Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))" />]]>
+        </NuSpecElement>
 
-				<!--
-				Dependencies must target the primary Framework group regardless of their specific target Frameworks.
-				
-				For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
-				element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
-				
-				LibFrameworkFolderName is defined by @(NuGetPackageProjectOutputGroupDependency), but each non-flavor dependency must target the primary Framework group regardless.
-				I.e., dependency groups must be defined within the target Framework of the primary project rather than defining new dependency groups of their own.  There's a similar 
-				requirement that dependencies of "flavor" references must target the flavors' target Framework instead of their own.
-				
-				For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
-				file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
-				element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
-				a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
-				-->
-				<!--
-				TODO: Validate compatibility of target Framework before overwriting it.
-							For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
-				-->
-				<LibFrameworkFolderName Condition=" '%(PackageableDependency.IsFlavor)' != True ">$(NuGetTargetLibFrameworkFolderName)</LibFrameworkFolderName>
-			</PackageableDependency>
+        <!--
+        Dependencies must target the primary Framework group regardless of their specific target Frameworks.
+        
+        For example, if ProjectA depends on PackageA, and ProjectA targets .NET 4.5.1 while PackageA targets a portable subset, then we need to make sure that the dependency 
+        element for PackageA is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that PackageA is a dependency, because it targets the same exact Framework as ProjectA.
+        
+        LibFrameworkFolderName is defined by @(NuGetPackageProjectOutputGroupDependency), but each non-flavor dependency must target the primary Framework group regardless.
+        I.e., dependency groups must be defined within the target Framework of the primary project rather than defining new dependency groups of their own.  There's a similar 
+        requirement that dependencies of "flavor" references must target the flavors' target Framework instead of their own.
+        
+        For example, if ProjectA references ProjectB, and both projects use White Tie to build NuGet packages, then ProjectB is added as a dependency of ProjectA in the .nuspec
+        file that is generated for ProjectA; however, if ProjectA targets .NET 4.5.1 and ProjectB targets a portable subset, then we need to make sure that the dependency 
+        element for ProjectB is added to the net451 group in the .nuspec file, rather than creating a new dependency group for the portable Framework.  This ensures that when
+        a user references ProjectA's NuGet package, NuGet will determine that ProjectB is a dependency, because it targets the same exact Framework as ProjectA.
+        -->
+        <!--
+        TODO: Validate compatibility of target Framework before overwriting it.
+              For now, we'll just assume that if Visual Studio permits the package reference then it must be valid under the current project's target Framework.
+        -->
+        <LibFrameworkFolderName Condition=" '%(PackageableDependency.IsFlavor)' != True ">$(NuGetTargetLibFrameworkFolderName)</LibFrameworkFolderName>
+      </PackageableDependency>
 
-			<_NuSpecFileDependencyGroups Include="@(PackageableDependency->'%(LibFrameworkFolderName)')" KeepMetadata="LibFrameworkFolderName" KeepDuplicates="False" />
-			<_NuSpecFileDependencyGroups Condition=" '%(LibFrameworkFolderName)' != '' ">
-				<Dependencies>@(PackageableDependency->'%(NuSpecElement)', '')</Dependencies>
-			</_NuSpecFileDependencyGroups>
+      <_NuSpecFileDependencyGroups Include="@(PackageableDependency->'%(LibFrameworkFolderName)')" KeepMetadata="LibFrameworkFolderName" KeepDuplicates="False" />
+      <_NuSpecFileDependencyGroups Condition=" '%(LibFrameworkFolderName)' != '' ">
+        <Dependencies>@(PackageableDependency->'%(NuSpecElement)', '')</Dependencies>
+      </_NuSpecFileDependencyGroups>
 
-			<!--
-			TODO: Exclude satellite assemblies and instead create a new .nuspec/.nupkg for each, following these conventions: 
-			
-				http://docs.nuget.org/docs/creating-packages/creating-localized-packages#Satellite_Package_Approach
-				
-			-->
-			<!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
-			<_NuSpecFilesWithMetadata Include="@(PackageableProjectOutput)">
-				<Src>src='$([System.String]::Copy(`%(PackageableProjectOutput.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
-				<TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
-				<TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
-				<TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' != 'lib' AND '%(PackageableProjectOutput.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(PackageableProjectOutput.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
-			</_NuSpecFilesWithMetadata>
+      <!--
+      TODO: Exclude satellite assemblies and instead create a new .nuspec/.nupkg for each, following these conventions: 
+      
+        http://docs.nuget.org/docs/creating-packages/creating-localized-packages#Satellite_Package_Approach
+        
+      -->
+      <!-- DO NOT RENAME!  This private items list is used by TestingUtilities.targets to run some post-package tests. -->
+      <_NuSpecFilesWithMetadata Include="@(PackageableProjectOutput)">
+        <Src>src='$([System.String]::Copy(`%(PackageableProjectOutput.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
+        <TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
+        <TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
+        <TargetVal Condition=" '%(PackageableProjectOutput.PackageTarget)' != 'lib' AND '%(PackageableProjectOutput.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(PackageableProjectOutput.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
+      </_NuSpecFilesWithMetadata>
 
-			<_NuSpecFilesWithMetadata Include="@(PackageableProjectReferenceOutput)">
-				<Src>src='$([System.String]::Copy(`%(PackageableProjectReferenceOutput.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
-				<TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
-				<TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
-				<TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' != 'lib' AND '%(PackageableProjectReferenceOutput.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(PackageableProjectReferenceOutput.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
-			</_NuSpecFilesWithMetadata>
+      <_NuSpecFilesWithMetadata Include="@(PackageableProjectReferenceOutput)">
+        <Src>src='$([System.String]::Copy(`%(PackageableProjectReferenceOutput.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
+        <TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
+        <TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
+        <TargetVal Condition=" '%(PackageableProjectReferenceOutput.PackageTarget)' != 'lib' AND '%(PackageableProjectReferenceOutput.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(PackageableProjectReferenceOutput.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
+      </_NuSpecFilesWithMetadata>
 
-			<_NuSpecFilesWithMetadata Include="@(NuGetPackage)">
-				<Src>src='$([System.String]::Copy(`%(NuGetPackage.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
-				<TargetVal Condition=" '%(NuGetPackage.PackageTarget)' != 'lib' AND '%(NuGetPackage.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(NuGetPackage.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
-				<TargetVal Condition=" '%(NuGetPackage.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
-				<TargetVal Condition=" '%(NuGetPackage.PackageTarget)' == '' OR '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
-				<Exclude Condition=" '%(NuGetPackage.Exclude)' != '' ">exclude='$([System.String]::Copy(`%(NuGetPackage.Exclude)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Exclude>
-			</_NuSpecFilesWithMetadata>
+      <_NuSpecFilesWithMetadata Include="@(NuGetPackage)">
+        <Src>src='$([System.String]::Copy(`%(NuGetPackage.Identity)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Src>
+        <TargetVal Condition=" '%(NuGetPackage.PackageTarget)' != 'lib' AND '%(NuGetPackage.PackageTarget)' != '' ">target='$([System.String]::Copy(`%(NuGetPackage.PackageTarget)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</TargetVal>
+        <TargetVal Condition=" '%(NuGetPackage.PackageTarget)' == 'lib' AND '$(NuGetTargetLibFrameworkFolderName)' != '' ">target='lib\$(NuGetTargetLibFrameworkFolderName)'</TargetVal>
+        <TargetVal Condition=" '%(NuGetPackage.PackageTarget)' == '' OR '$(NuGetTargetLibFrameworkFolderName)' == '' ">target='lib'</TargetVal>
+        <Exclude Condition=" '%(NuGetPackage.Exclude)' != '' ">exclude='$([System.String]::Copy(`%(NuGetPackage.Exclude)`).Replace(`&amp;`, `&amp;amp;`).Replace(`&lt;`, `&amp;lt;`).Replace(`&gt;`, `&amp;gt;`).Replace(`&quot;`, `&amp;quot;`))'</Exclude>
+      </_NuSpecFilesWithMetadata>
 
-			<_PackageableContracts Include="@(PackageableProjectOutput)" Condition=" '%(PackageableProjectOutput.IsContractOutput)' == True " />
-			<_PackageableContracts Include="@(PackageableProjectReferenceOutput)" Condition=" '%(PackageableProjectReferenceOutput.IsContractOutput)' == True " />
-		</ItemGroup>
+      <_PackageableContracts Include="@(PackageableProjectOutput)" Condition=" '%(PackageableProjectOutput.IsContractOutput)' == True " />
+      <_PackageableContracts Include="@(PackageableProjectReferenceOutput)" Condition=" '%(PackageableProjectReferenceOutput.IsContractOutput)' == True " />
+    </ItemGroup>
 
-		<PropertyGroup>
-			<_NuSpecDefineReferences Condition=" '@(_PackageableContracts)' != '' OR '@(_NuSpecFileFlavorReferenceGroups)' != '' ">True</_NuSpecDefineReferences>
-			<_NuSpecDefineDependencies Condition=" '@(_NuSpecFileDependencyGroups)' != '' ">True</_NuSpecDefineDependencies>
-			<_NuSpecFileReferencesDefaultGroup Condition=" '$(NuGetTargetLibFrameworkFolderName)' != '' ">targetFramework=&quot;$(NuGetTargetLibFrameworkFolderName)&quot;</_NuSpecFileReferencesDefaultGroup>
-		</PropertyGroup>
+    <PropertyGroup>
+      <_NuSpecDefineReferences Condition=" '@(_PackageableContracts)' != '' OR '@(_NuSpecFileFlavorReferenceGroups)' != '' ">True</_NuSpecDefineReferences>
+      <_NuSpecDefineDependencies Condition=" '@(_NuSpecFileDependencyGroups)' != '' ">True</_NuSpecDefineDependencies>
+      <_NuSpecFileReferencesDefaultGroup Condition=" '$(NuGetTargetLibFrameworkFolderName)' != '' ">targetFramework=&quot;$(NuGetTargetLibFrameworkFolderName)&quot;</_NuSpecFileReferencesDefaultGroup>
+    </PropertyGroup>
 
-		<PropertyGroup>
-			<_NuSpecFileStart>
-				<![CDATA[<?xml version="1.0" encoding="utf-8" ?>
+    <PropertyGroup>
+      <_NuSpecFileStart>
+        <![CDATA[<?xml version="1.0" encoding="utf-8" ?>
 <package xmlns="$(NuSpecNamespace)">]]>
-			</_NuSpecFileStart>
-			<_NuSpecFileMetadataStart>
-				<![CDATA[
-	<metadata>
-		<id>$(_NuSpecId.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</id>
-		<version>$(_NuSpecVersion.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</version>
-		<title>$(_NuSpecTitle.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</title>
-		<authors>$(_NuSpecAuthors.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</authors>
-		<owners>$(_NuSpecOwners.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</owners>
-		<description>$(_NuSpecDescription.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</description>
-		<releaseNotes>$(_NuSpecReleaseNotes.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</releaseNotes>
-		<summary>$(_NuSpecSummary.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</summary>
-		<language>$(NuSpecLanguage.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</language>
-		<copyright>$(_NuSpecCopyright.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</copyright>
-		<requireLicenseAcceptance>$(_NuSpecRequireLicenseAcceptance.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</requireLicenseAcceptance>
-		<tags>$(NuSpecTags.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</tags>]]>
-			</_NuSpecFileMetadataStart>
-			<_NuSpecFileDependenciesStart>
-				<![CDATA[
-		<dependencies>]]>
-			</_NuSpecFileDependenciesStart>
-			<_NuSpecFileDependenciesEnd>
-				<![CDATA[
-		</dependencies>]]>
-			</_NuSpecFileDependenciesEnd>
-			<_NuSpecFileReferencesStart>
-				<![CDATA[
-		<references>
-			<group $(_NuSpecFileReferencesDefaultGroup)>]]>
-			</_NuSpecFileReferencesStart>
-			<_NuSpecFileGroupReferencesStart>
-				<![CDATA[
-			</group>]]>
-			</_NuSpecFileGroupReferencesStart>
-			<_NuSpecFileReferencesEnd>
-				<![CDATA[
-		</references>]]>
-			</_NuSpecFileReferencesEnd>
-			<_NuSpecFileMetadataEnd>
-				<![CDATA[
-	</metadata>]]>
-			</_NuSpecFileMetadataEnd>
-			<_NuSpecFileFilesStart>
-				<![CDATA[
-		<files>]]>
-			</_NuSpecFileFilesStart>
-			<_NuSpecFileFilesEnd>
-				<![CDATA[
-		</files>]]>
-			</_NuSpecFileFilesEnd>
-			<_NuSpecFileEnd>
-				<![CDATA[
+      </_NuSpecFileStart>
+      <_NuSpecFileMetadataStart>
+        <![CDATA[
+  <metadata>
+    <id>$(_NuSpecId.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</id>
+    <version>$(_NuSpecVersion.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</version>
+    <title>$(_NuSpecTitle.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</title>
+    <authors>$(_NuSpecAuthors.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</authors>
+    <owners>$(_NuSpecOwners.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</owners>
+    <description>$(_NuSpecDescription.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</description>
+    <releaseNotes>$(_NuSpecReleaseNotes.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</releaseNotes>
+    <summary>$(_NuSpecSummary.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</summary>
+    <language>$(NuSpecLanguage.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</language>
+    <copyright>$(_NuSpecCopyright.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</copyright>
+    <requireLicenseAcceptance>$(_NuSpecRequireLicenseAcceptance.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</requireLicenseAcceptance>
+    <tags>$(NuSpecTags.Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;'))</tags>]]>
+      </_NuSpecFileMetadataStart>
+      <_NuSpecFileDependenciesStart>
+        <![CDATA[
+    <dependencies>]]>
+      </_NuSpecFileDependenciesStart>
+      <_NuSpecFileDependenciesEnd>
+        <![CDATA[
+    </dependencies>]]>
+      </_NuSpecFileDependenciesEnd>
+      <_NuSpecFileReferencesStart>
+        <![CDATA[
+    <references>
+      <group $(_NuSpecFileReferencesDefaultGroup)>]]>
+      </_NuSpecFileReferencesStart>
+      <_NuSpecFileGroupReferencesStart>
+        <![CDATA[
+      </group>]]>
+      </_NuSpecFileGroupReferencesStart>
+      <_NuSpecFileReferencesEnd>
+        <![CDATA[
+    </references>]]>
+      </_NuSpecFileReferencesEnd>
+      <_NuSpecFileMetadataEnd>
+        <![CDATA[
+  </metadata>]]>
+      </_NuSpecFileMetadataEnd>
+      <_NuSpecFileFilesStart>
+        <![CDATA[
+    <files>]]>
+      </_NuSpecFileFilesStart>
+      <_NuSpecFileFilesEnd>
+        <![CDATA[
+    </files>]]>
+      </_NuSpecFileFilesEnd>
+      <_NuSpecFileEnd>
+        <![CDATA[
 </package>]]>
-			</_NuSpecFileEnd>
-		</PropertyGroup>
+      </_NuSpecFileEnd>
+    </PropertyGroup>
 
-		<ItemGroup>
-			<_NuSpecFile Include="$(_NuSpecFileStart)" />
-			<_NuSpecFile Include="$(_NuSpecFileMetadataStart)" />
+    <ItemGroup>
+      <_NuSpecFile Include="$(_NuSpecFileStart)" />
+      <_NuSpecFile Include="$(_NuSpecFileMetadataStart)" />
 
-			<_NuSpecFile Condition=" '$(NuSpecProjectUrl)' != '' "
-									 Include="&lt;projectUrl&gt;$(NuSpecProjectUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/projectUrl&gt;" />
+      <_NuSpecFile Condition=" '$(NuSpecProjectUrl)' != '' "
+                   Include="&lt;projectUrl&gt;$(NuSpecProjectUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/projectUrl&gt;" />
 
-			<_NuSpecFile Condition=" '$(NuSpecIconUrl)' != '' "
-									 Include="&lt;iconUrl&gt;$(NuSpecIconUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/iconUrl&gt;" />
+      <_NuSpecFile Condition=" '$(NuSpecIconUrl)' != '' "
+                   Include="&lt;iconUrl&gt;$(NuSpecIconUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/iconUrl&gt;" />
 
-			<_NuSpecFile Condition=" '$(NuSpecLicenseUrl)' != '' "
-									 Include="&lt;licenseUrl&gt;$(NuSpecLicenseUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/licenseUrl&gt;" />
+      <_NuSpecFile Condition=" '$(NuSpecLicenseUrl)' != '' "
+                   Include="&lt;licenseUrl&gt;$(NuSpecLicenseUrl.Replace('&amp;', '&amp;amp;').Replace('&lt;', '&amp;lt;').Replace('&gt;', '&amp;gt;').Replace('&quot;', '&amp;quot;'))&lt;/licenseUrl&gt;" />
 
-			<_NuSpecFile Condition=" '$(_NuSpecDevelopmentDependency)' == True "
-									 Include="&lt;developmentDependency&gt;true&lt;/developmentDependency&gt;" />
-		</ItemGroup>
+      <_NuSpecFile Condition=" '$(_NuSpecDevelopmentDependency)' == True "
+                   Include="&lt;developmentDependency&gt;true&lt;/developmentDependency&gt;" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '$(_NuSpecDefineDependencies)' == True ">
-			<_NuSpecFile Include="$(_NuSpecFileDependenciesStart)" />
-			<_NuSpecFile Include="&lt;group targetFramework=&quot;%(_NuSpecFileDependencyGroups.Identity)&quot;&gt;%(_NuSpecFileDependencyGroups.Dependencies)&lt;/group&gt;" />
-			<_NuSpecFile Include="$(_NuSpecFileDependenciesEnd)" />
-		</ItemGroup>
+    <ItemGroup Condition=" '$(_NuSpecDefineDependencies)' == True ">
+      <_NuSpecFile Include="$(_NuSpecFileDependenciesStart)" />
+      <_NuSpecFile Include="&lt;group targetFramework=&quot;%(_NuSpecFileDependencyGroups.Identity)&quot;&gt;%(_NuSpecFileDependencyGroups.Dependencies)&lt;/group&gt;" />
+      <_NuSpecFile Include="$(_NuSpecFileDependenciesEnd)" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
-			<_NuSpecFile Include="$(_NuSpecFileReferencesStart)" />
-			<_NuSpecFile Include="@(_NuSpecFilePrimaryReferences, '')" />
-		</ItemGroup>
+    <ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
+      <_NuSpecFile Include="$(_NuSpecFileReferencesStart)" />
+      <_NuSpecFile Include="@(_NuSpecFilePrimaryReferences, '')" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
-			<_NuSpecFile Include="$(_NuSpecFileGroupReferencesStart)" />
-		</ItemGroup>
+    <ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
+      <_NuSpecFile Include="$(_NuSpecFileGroupReferencesStart)" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True AND '@(_NuSpecFileFlavorReferenceGroups)' != '' ">
-			<_NuSpecFile Include="&lt;group targetFramework=&quot;%(_NuSpecFileFlavorReferenceGroups.Identity)&quot;&gt;%(_NuSpecFileFlavorReferenceGroups.References)&lt;/group&gt;" />
-		</ItemGroup>
+    <ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True AND '@(_NuSpecFileFlavorReferenceGroups)' != '' ">
+      <_NuSpecFile Include="&lt;group targetFramework=&quot;%(_NuSpecFileFlavorReferenceGroups.Identity)&quot;&gt;%(_NuSpecFileFlavorReferenceGroups.References)&lt;/group&gt;" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
-			<_NuSpecFile Include="$(_NuSpecFileReferencesEnd)" />
-		</ItemGroup>
+    <ItemGroup Condition=" '$(_NuSpecDefineReferences)' == True ">
+      <_NuSpecFile Include="$(_NuSpecFileReferencesEnd)" />
+    </ItemGroup>
 
-		<ItemGroup>
-			<_NuSpecFile Include="$(_NuSpecFileMetadataEnd)" />
-		</ItemGroup>
+    <ItemGroup>
+      <_NuSpecFile Include="$(_NuSpecFileMetadataEnd)" />
+    </ItemGroup>
 
-		<ItemGroup Condition=" '@(_NuSpecFilesWithMetadata)' != '' ">
-			<_NuSpecFile Include="$(_NuSpecFileFilesStart)" />
-			<_NuSpecFile Include="&lt;file %(_NuSpecFilesWithMetadata.Src) %(_NuSpecFilesWithMetadata.TargetVal) %(_NuSpecFilesWithMetadata.Exclude) /&gt;" />
-			<_NuSpecFile Include="$(_NuSpecFileFilesEnd)" />
-		</ItemGroup>
+    <ItemGroup Condition=" '@(_NuSpecFilesWithMetadata)' != '' ">
+      <_NuSpecFile Include="$(_NuSpecFileFilesStart)" />
+      <_NuSpecFile Include="&lt;file %(_NuSpecFilesWithMetadata.Src) %(_NuSpecFilesWithMetadata.TargetVal) %(_NuSpecFilesWithMetadata.Exclude) /&gt;" />
+      <_NuSpecFile Include="$(_NuSpecFileFilesEnd)" />
+    </ItemGroup>
 
-		<ItemGroup>
-			<_NuSpecFile Include="$(_NuSpecFileEnd)" />
-		</ItemGroup>
+    <ItemGroup>
+      <_NuSpecFile Include="$(_NuSpecFileEnd)" />
+    </ItemGroup>
 
-		<WriteLinesToFile File="$(NuSpecFile)" Lines="@(_NuSpecFile)" Overwrite="true" Encoding="UTF-8" />
+    <WriteLinesToFile File="$(NuSpecFile)" Lines="@(_NuSpecFile)" Overwrite="true" Encoding="UTF-8" />
 
-	</Target>
+  </Target>
 
-	<Target Name="NuGetFlavorReferences" DependsOnTargets="_PrepareToBuildNuGetPackage;_ResolveTokensForNuSpec" Condition=" '$(BuildPackage)' == True "
-					Returns="@(NuGetFlavorReference)">
+  <Target Name="NuGetFlavorReferences" DependsOnTargets="_ResolveTokensForNuSpec"
+          Returns="@(NuGetFlavorReference)">
 
-		<ItemGroup>
+    <ItemGroup>
 
-			<NuGetFlavorReference Include="@(NuGetFlavor->'%(FullPath)')">
-				<PackageId>$(_NuSpecId)</PackageId>
-				<PackageVersion>$(_NuSpecVersion)</PackageVersion>
-				<IsDevelopmentDependency>$(_NuSpecDevelopmentDependency)</IsDevelopmentDependency>
-			</NuGetFlavorReference>
+      <NuGetFlavorReference Include="@(NuGetFlavor->'%(FullPath)')">
+        <PackageId>$(_NuSpecId)</PackageId>
+        <PackageVersion>$(_NuSpecVersion)</PackageVersion>
+        <IsDevelopmentDependency>$(_NuSpecDevelopmentDependency)</IsDevelopmentDependency>
+      </NuGetFlavorReference>
 
-		</ItemGroup>
+    </ItemGroup>
 
-	</Target>
+  </Target>
 
-	<!-- BuiltProjectOutputGroupDependencies does a bit more than is needed, but it ensures that any MS-defined Before* tasks are executed.  ResolveReferences alone doesn't. -->
-	<Target Name="NuGetFlavorRecursiveReferences" DependsOnTargets="NuGetFlavorReferences;BuiltProjectOutputGroupDependencies"
-					Returns="@(NuGetFlavorRecursiveReference)">
+  <!-- This target is used by WhiteTie.NuGet.Required.targets -->
+  <Target Name="NuGetPreparePackageAttributes" DependsOnTargets="_ResolveNuGetTargetLibFrameworkFolderName;_ResolveTokensForNuSpec">
+  </Target>
 
-		<ItemGroup>
-			<_NuGetFlavorRecursiveReferenceNonDistinct Include="@(NuGetFlavorReference)">
-				<MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
-			</_NuGetFlavorRecursiveReferenceNonDistinct>
-		</ItemGroup>
+  <!-- BuiltProjectOutputGroupDependencies does a bit more than is needed, but it ensures that any MS-defined Before* tasks are executed.  ResolveReferences alone doesn't. -->
+  <Target Name="NuGetFlavorRecursiveReferences" DependsOnTargets="NuGetFlavorReferences;BuiltProjectOutputGroupDependencies"
+          Returns="@(NuGetFlavorRecursiveReference)">
 
-		<MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="NuGetFlavorRecursiveReferences"
-						 Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
-						 RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
-						 BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
-			<Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorRecursiveReferenceNonDistinct" />
-		</MSBuild>
+    <ItemGroup>
+      <_NuGetFlavorRecursiveReferenceNonDistinct Include="@(NuGetFlavorReference)">
+        <MSBuildSourceProjectFile>$(MSBuildProjectFullPath)</MSBuildSourceProjectFile>
+      </_NuGetFlavorRecursiveReferenceNonDistinct>
+    </ItemGroup>
 
-		<ItemGroup>
-			<NuGetFlavorRecursiveReference Remove="@(_NuGetFlavorRecursiveReferenceNonDistinct)" />
-			<NuGetFlavorRecursiveReference Include="@(_NuGetFlavorRecursiveReferenceNonDistinct)" KeepDuplicates="False" />
-		</ItemGroup>
+    <MSBuild Projects="@(ProjectReferenceWithConfiguration)" Targets="NuGetFlavorRecursiveReferences"
+             Properties="%(ProjectReferenceWithConfiguration.SetConfiguration);%(ProjectReferenceWithConfiguration.SetPlatform);CustomBeforeMicrosoftCommonTargets=$(_WhiteTieRequiredTargetsFile)"
+             RemoveProperties="%(ProjectReferenceWithConfiguration.GlobalPropertiesToRemove)"
+             BuildInParallel="$(BuildInParallel)" ContinueOnError="!$(BuildingProject)">
+      <Output TaskParameter="TargetOutputs" ItemName="_NuGetFlavorRecursiveReferenceNonDistinct" />
+    </MSBuild>
 
-	</Target>
+    <ItemGroup>
+      <NuGetFlavorRecursiveReference Remove="@(_NuGetFlavorRecursiveReferenceNonDistinct)" />
+      <NuGetFlavorRecursiveReference Include="@(_NuGetFlavorRecursiveReferenceNonDistinct)" KeepDuplicates="False" />
+    </ItemGroup>
 
-	<PropertyGroup>
-		<DeployPackageDependsOn>
-			_GetDeployablePackages;
-			CopyNuGetPackageToProjectDeployDir;
-		</DeployPackageDependsOn>
-	</PropertyGroup>
-	<Target Name="DeployPackage" AfterTargets="BuildPackage" DependsOnTargets="$(DeployPackageDependsOn)"
-					Condition=" $(DeploymentEnabled) ">
-	</Target>
+  </Target>
 
-	<Target Name="_GetDeployablePackages">
+  <PropertyGroup>
+    <DeployPackageDependsOn>
+      _GetDeployablePackages;
+      CopyNuGetPackageToProjectDeployDir;
+    </DeployPackageDependsOn>
+  </PropertyGroup>
+  <Target Name="DeployPackage" AfterTargets="BuildPackage" DependsOnTargets="$(DeployPackageDependsOn)"
+          Condition=" $(DeploymentEnabled) ">
+  </Target>
 
-		<ItemGroup>
-			<_DeployablePackages Include="$(TargetDir)*.nupkg" />
+  <Target Name="_GetDeployablePackages">
 
-			<_DeployablePackages>
-				<DeployTarget Condition=" '%(_DeployablePackages.DeployTarget)' == '' ">%(Filename)%(Extension)</DeployTarget>
-			</_DeployablePackages>
-		</ItemGroup>
+    <ItemGroup>
+      <_DeployablePackages Include="$(TargetDir)*.nupkg" />
 
-	</Target>
+      <_DeployablePackages>
+        <DeployTarget Condition=" '%(_DeployablePackages.DeployTarget)' == '' ">%(Filename)%(Extension)</DeployTarget>
+      </_DeployablePackages>
+    </ItemGroup>
 
-	<Target Name="CopyNuGetPackageToProjectDeployDir" Inputs="@(_DeployablePackages)" Outputs="@(_DeployablePackages->'$(ProjectDeployDir)%(DeployTarget)')">
+  </Target>
 
-		<Copy Condition=" '%(_DeployablePackages.DeployTarget)' != '' "
-					SourceFiles="@(_DeployablePackages)" DestinationFiles="@(_DeployablePackages->'$(ProjectDeployDir)%(DeployTarget)')" />
+  <Target Name="CopyNuGetPackageToProjectDeployDir" Inputs="@(_DeployablePackages)" Outputs="@(_DeployablePackages->'$(ProjectDeployDir)%(DeployTarget)')">
 
-		<Copy Condition=" '%(_DeployablePackages.DeployTarget)' == '' "
-					SourceFiles="@(_DeployablePackages)" DestinationFolder="$(ProjectDeployDir)" />
+    <Copy Condition=" '%(_DeployablePackages.DeployTarget)' != '' "
+          SourceFiles="@(_DeployablePackages)" DestinationFiles="@(_DeployablePackages->'$(ProjectDeployDir)%(DeployTarget)')" />
 
-	</Target>
+    <Copy Condition=" '%(_DeployablePackages.DeployTarget)' == '' "
+          SourceFiles="@(_DeployablePackages)" DestinationFolder="$(ProjectDeployDir)" />
+
+  </Target>
 
 </Project>
