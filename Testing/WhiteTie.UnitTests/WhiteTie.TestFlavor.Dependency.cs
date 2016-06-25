@@ -24,7 +24,7 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81"
+          ".NETStandard,Version=v1.2"
         },
         (from name in package.GetSupportedFrameworks()
          select name.FullName)
@@ -62,8 +62,8 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavor.Dependency.dll",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavor.Dependency.chm"
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavor.Dependency.dll",
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavor.Dependency.chm"
         },
         (from file in package.GetFiles()
          select file.TargetFramework.FullName + ":" + file.EffectivePath)

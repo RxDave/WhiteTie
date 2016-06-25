@@ -37,8 +37,8 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETFramework,Version=v4.5.1:WhiteTie.TestDependency:1.0.0.0",
-          ".NETFramework,Version=v4.5.1:WhiteTie.TestDuplicateDependency:1.0.0.0"
+          ".NETFramework,Version=v4.5.1:WhiteTie.TestDependency:1.0.0",
+          ".NETFramework,Version=v4.5.1:WhiteTie.TestDuplicateDependency:1.0.0"
         },
         (from set in package.DependencySets
          from dependency in set.Dependencies

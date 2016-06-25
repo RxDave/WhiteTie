@@ -38,6 +38,8 @@ Dependencies:
          * NOTE: XBOX targets have been removed.
          * 
          * https://docs.nuget.org/create/targetframeworks
+         * https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-core-applications.md
+         * https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md
          */
         var profiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -46,42 +48,42 @@ Dependencies:
           { "Profile4", "portable-net45+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
           { "Profile5", "portable-net4+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8)
           { "Profile6", "portable-net403+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8)
-          { "Profile7", "portable-net45+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8)
+          { "Profile7", "netstandard1.1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8)
           { "Profile14", "portable-net4+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5)
           { "Profile18", "portable-net403+sl4" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4)
           { "Profile19", "portable-net403+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5)
           { "Profile23", "portable-net45+sl4" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4)
           { "Profile24", "portable-net45+sl5+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5)
-          { "Profile31", "portable-netcore451+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)
-          { "Profile32", "portable-netcore451+wpa81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1)
+          { "Profile31", "netstandard1.0" },  // .NET Portable Subset (Windows 8.1, Windows Phone Silverlight 8.1)
+          { "Profile32", "netstandard1.2" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1)
           { "Profile36", "portable-net4+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
           { "Profile37", "portable-net4+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8)
           { "Profile41", "portable-net403+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8)
           { "Profile42", "portable-net403+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8)
-          { "Profile44", "portable-net451+netcore451" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1)
+          { "Profile44", "netstandard1.2" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1)
           { "Profile46", "portable-net45+sl4+netcore45" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8)
           { "Profile47", "portable-net45+sl5+netcore45+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8)
-          { "Profile49", "portable-net45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8)
-          { "Profile78", "portable-net45+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8)
-          { "Profile84", "portable-wpa81+wp81" },  // .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1)
+          { "Profile49", "netstandard1.0" },  // .NET Portable Subset (.NET Framework 4.5, Windows Phone Silverlight 8)
+          { "Profile78", "netstandard1.0" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone Silverlight 8)
+          { "Profile84", "netstandard1.0" },  // .NET Portable Subset (Windows Phone 8.1, Windows Phone Silverlight 8.1)
           { "Profile88", "portable-net4+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
           { "Profile92", "portable-net4+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Windows 8, Windows Phone 8.1)
           { "Profile95", "portable-net403+sl4+netcore45+wp7" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7)
           { "Profile96", "portable-net403+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
           { "Profile102", "portable-net403+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Windows 8, Windows Phone 8.1)
           { "Profile104", "portable-net45+sl4+netcore45+wp71" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 7.5)
-          { "Profile111", "portable-net45+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1)
+          { "Profile111", "netstandard1.1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1)
           { "Profile136", "portable-net4+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
           { "Profile143", "portable-net403+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
           { "Profile147", "portable-net403+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
-          { "Profile151", "portable-net451+netcore451+wpa81" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1)
+          { "Profile151", "netstandard1.2" },  // .NET Portable Subset (.NET Framework 4.5.1, Windows 8.1, Windows Phone 8.1)
           { "Profile154", "portable-net45+sl4+netcore45+wp8" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 4, Windows 8, Windows Phone Silverlight 8)
-          { "Profile157", "portable-netcore451+wpa81+wp81" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1)
+          { "Profile157", "netstandard1.0" },  // .NET Portable Subset (Windows 8.1, Windows Phone 8.1, Windows Phone Silverlight 8.1)
           { "Profile158", "portable-net45+sl5+netcore45+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone Silverlight 8)
           { "Profile225", "portable-net4+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1)
           { "Profile240", "portable-net403+sl5+netcore45+wpa81" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1)
           { "Profile255", "portable-net45+sl5+netcore45+wpa81+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1)
-          { "Profile259", "portable-net45+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
+          { "Profile259", "netstandard1.0" },  // .NET Portable Subset (.NET Framework 4.5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
           { "Profile328", "portable-net4+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
           { "Profile336", "portable-net403+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" },  // .NET Portable Subset (.NET Framework 4.0.3, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
           { "Profile344", "portable-net45+sl5+netcore45+wpa81+wp8+MonoAndroid1+MonoTouch1" }  // .NET Portable Subset (.NET Framework 4.5, Silverlight 5, Windows 8, Windows Phone 8.1, Windows Phone Silverlight 8)
@@ -142,15 +144,63 @@ Dependencies:
             else
             {
               /*
-               * Full Frameworks
+               * Other/Modern Framework Identifiers
                */
-              if (string.Equals(identifier, ".NETCore", c))
+              Func<bool, string> normalizeVersion = removePeriods =>
               {
-                libFolderName = "netcore45";
+                if (string.IsNullOrWhiteSpace(version))
+                {
+                  return null;
+                }
+                
+                var v = version.Trim();
+                
+                if (v.StartsWith("v"))
+                {
+                  if (v.Length == 1)
+                  {
+                    return null;
+                  }
+                  
+                  v = v.Substring(1);
+                }
+                
+                if (removePeriods)
+                {
+                  v = v.Replace(".", string.Empty);
+                }
+                
+                return v;
+              };
+              
+              if (string.Equals(identifier, ".NETCoreApp", c))
+              {
+                libFolderName = "netcoreapp" + (normalizeVersion(false) ?? "1.0");
               }
-              else if (version != null && version.Length > 1 && version.StartsWith("v"))
+              else if (string.Equals(identifier, ".NETCore", c))
               {
-                libFolderName = "net" + version.Substring(1).Replace(".", string.Empty);
+                libFolderName = "netcore" + (normalizeVersion(true) ?? "50");
+              }
+              else if (string.Equals(identifier, "UAP", c))
+              {
+                libFolderName = "uap" + (normalizeVersion(true) ?? "10");
+              }
+              else if (string.Equals(identifier, "netmf", c))
+              {
+                libFolderName = "netmf" + normalizeVersion(true);
+              }
+              else if (!string.IsNullOrWhiteSpace(profile))
+              {
+                libFolderName = "netstandard" + (normalizeVersion(false) ?? "1.0");
+              }
+              else
+              {
+                version = normalizeVersion(true);
+                
+                if (version != null)
+                {
+                  libFolderName = "net" + version;
+                }
               }
             }
           }

@@ -23,7 +23,7 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETPortable,Version=v0.0,Profile=net45+netcore45+wp8+MonoAndroid1+MonoTouch1"
+          ".NETStandard,Version=v1.0"
         },
         (from name in package.GetSupportedFrameworks()
          select name.FullName)
@@ -37,7 +37,7 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETPortable,Version=v0.0,Profile=net45+netcore45+wp8+MonoAndroid1+MonoTouch1:WhiteTie.TestDuplicateDependency:1.0.0.0"
+          ".NETStandard,Version=v1.0:WhiteTie.TestDuplicateDependency:1.0.0"
         },
         (from set in package.DependencySets
          from dependency in set.Dependencies
@@ -64,7 +64,7 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETPortable,Version=v0.0,Profile=net45+netcore45+wp8+MonoAndroid1+MonoTouch1:WhiteTie.TestDependency.dll"
+          ".NETStandard,Version=v1.0:WhiteTie.TestDependency.dll"
         },
         (from file in package.GetFiles()
          select file.TargetFramework.FullName + ":" + file.EffectivePath)

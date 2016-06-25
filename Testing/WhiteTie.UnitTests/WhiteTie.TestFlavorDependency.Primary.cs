@@ -26,7 +26,7 @@ namespace WhiteTie.UnitTests
       CollectionAssert.AreEquivalent(new[]
         {
           ".NETFramework,Version=v4.5.1",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81"
+          ".NETStandard,Version=v1.2"
         },
         (from name in package.GetSupportedFrameworks()
          select name.FullName)
@@ -40,13 +40,13 @@ namespace WhiteTie.UnitTests
 
       CollectionAssert.AreEquivalent(new[]
         {
-          ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavor:1.0.0.0",
-          ".NETFramework,Version=v4.5.1:WhiteTie.TestDependency:1.0.0.0",
-          //".NETFramework,Version=v4.5.1:WhiteTie.TestDuplicateDependency:1.0.0.0",  TODO: Unit test fails with this uncommented.  Does it indicate a bug?
-          ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavor.DuplicateDependency:1.0.0.0",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavor:1.0.0.0",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavor.Dependency:1.0.0.0",
-          //".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavor.DuplicateDependency:1.0.0.0"  TODO: Unit test fails with this uncommented.  Does it indicate a bug?
+          ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavor:1.0.0",
+          ".NETFramework,Version=v4.5.1:WhiteTie.TestDependency:1.0.0",
+          //".NETFramework,Version=v4.5.1:WhiteTie.TestDuplicateDependency:1.0.0",  TODO: Unit test fails with this uncommented.  Does it indicate a bug?
+          ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavor.DuplicateDependency:1.0.0",
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavor:1.0.0",
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavor.Dependency:1.0.0",
+          //".NETStandard,Version=v1.0:WhiteTie.TestFlavor.DuplicateDependency:1.0.0"  TODO: Unit test fails with this uncommented.  Does it indicate a bug?
         },
         (from set in package.DependencySets
          from dependency in set.Dependencies
@@ -62,7 +62,7 @@ namespace WhiteTie.UnitTests
       CollectionAssert.AreEquivalent(new[]
         {
           ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavorDependency.Primary.dll",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavorDependency.Flavor.dll"
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavorDependency.Flavor.dll"
         },
         (from set in package.PackageAssemblyReferences
          from reference in set.References
@@ -79,7 +79,7 @@ namespace WhiteTie.UnitTests
         {
           ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavorDependency.Primary.dll",
           ".NETFramework,Version=v4.5.1:WhiteTie.TestFlavorDependency.Primary.chm",
-          ".NETPortable,Version=v0.0,Profile=netcore451+wpa81:WhiteTie.TestFlavorDependency.Flavor.dll"
+          ".NETStandard,Version=v1.2:WhiteTie.TestFlavorDependency.Flavor.dll"
         },
         (from file in package.GetFiles()
          select file.TargetFramework.FullName + ":" + file.EffectivePath)
