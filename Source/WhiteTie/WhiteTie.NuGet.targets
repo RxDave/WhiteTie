@@ -21,6 +21,7 @@ Dependencies:
     <ParameterGroup>
       <TargetFrameworkVersion Required="False" />
       <TargetFrameworkIdentifier Required="False" />
+      <TargetPlatformIdentifier Required="False" />
       <TargetFrameworkProfile Required="False" />
       <!-- OR -->
       <TargetFrameworks Required="False" ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
@@ -99,6 +100,7 @@ Dependencies:
               { 
                 { "Version", TargetFrameworkVersion }, 
                 { "Identifier", TargetFrameworkIdentifier }, 
+                { "Platform", TargetPlatformIdentifier },
                 { "Profile", TargetFrameworkProfile }
               })
             };
@@ -115,6 +117,7 @@ Dependencies:
         {
           var version = targetFramework.GetMetadata("Version");
           var identifier = targetFramework.GetMetadata("Identifier");
+          var platform = targetFramework.GetMetadata("Platform");
           var profile = targetFramework.GetMetadata("Profile");
           
           string libFolderName;
@@ -181,7 +184,7 @@ Dependencies:
               {
                 libFolderName = "netcore" + (normalizeVersion(true) ?? "50");
               }
-              else if (string.Equals(identifier, "UAP", c))
+              else if (string.Equals(platform, "UAP", c))
               {
                 libFolderName = "uap" + (normalizeVersion(true) ?? "10");
               }
@@ -306,6 +309,7 @@ Projects:
 
     <ResolveNuGetTargetLibFolderName TargetFrameworkVersion="$(TargetFrameworkVersion)"
                                      TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+                                     TargetPlatformIdentifier="$(TargetPlatformIdentifier)"
                                      TargetFrameworkProfile="$(TargetFrameworkProfile)">
       <Output TaskParameter="LibFolderNames" ItemName="_NuGetTargetLibFrameworkFolderNames" />
     </ResolveNuGetTargetLibFolderName>
